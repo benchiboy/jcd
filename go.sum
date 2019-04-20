@@ -1,0 +1,10 @@
+github.com/go-sql-driver/mysql v0.0.0-20161105214428-2b7dffee1188/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
+github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
+github.com/gorilla/securecookie v0.0.0-20180608144417-78f3d318a8bf/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
+github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
+github.com/gorilla/sessions v1.1.1/go.mod h1:8KCfur6+4Mqcc6S0FEfKuN15Vl5MgXW92AE8ovaJD0w=
+github.com/pantsing/goconf v0.0.0-20150322095841-9d780c39300f h1:ZHr9o9MJh63kvcfZBgW2y59mWJbDb4q4xgmuJOKB7xU=
+github.com/pantsing/goconf v0.0.0-20150322095841-9d780c39300f/go.mod h1:z5xTQQ+UPJF1NLkkS7pBHebNBkfeBxFbPoE+ysn9Cjw=
+gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df/go.mod h1:LRQQ+SO6ZHR7tOkpBDuZnXENFzX8qRjMDMyPD6BRkCw=
+gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3 h1:AFxeG48hTWHhDTQDk/m2gorfVHUEa9vo3tp3D7TzwjI=
+gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
