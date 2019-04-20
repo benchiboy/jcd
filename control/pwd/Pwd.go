@@ -8,14 +8,16 @@ import (
 	"jcd/service/account"
 	"jcd/service/dbcomm"
 	"net/http"
+	"strconv"
 )
 
 /*
 	修改密码
 */
 type ChangePwdReq struct {
-	OldPwd string `json:"old_password"`
-	NewPwd string `json:"new_password"`
+	OldPwd  string `json:"old_password"`
+	NewPwd  string `json:"new_password"`
+	SmsCode string `json:"sms_code"`
 }
 
 /*
@@ -49,6 +51,7 @@ func ChangePwd(w http.ResponseWriter, req *http.Request) {
 	if tokenErr != nil {
 		return
 	}
+	uId, _ := strconv.ParseInt(userId, 10, 64)
 	var changeReq ChangePwdReq
 	var changeResp ChangePwdResp
 	err := json.NewDecoder(req.Body).Decode(&changeReq)
@@ -58,8 +61,14 @@ func ChangePwd(w http.ResponseWriter, req *http.Request) {
 		common.Write_Response(changeResp, w, req)
 		return
 	}
-
 	defer req.Body.Close()
+
+	if err := common.CheckSmsCode(uId, common.EMPTY_STRING, changeReq.SmsCode); err != nil {
+		changeResp.ErrCode = common.ERR_CODE_VERIFY
+		changeResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+		common.Write_Response(changeResp, w, req)
+		return
+	}
 
 	var search account.Search
 	search.LoginName = userId

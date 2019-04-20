@@ -2,13 +2,17 @@ package common
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"jcd/service/dbcomm"
+	"jcd/service/smscode"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/mojocn/base64Captcha"
 )
 
 const ERR_CODE_SUCCESS = "0000"
@@ -25,6 +29,8 @@ const ERR_CODE_STATUS = "5000"
 const ERR_CODE_FAILED = "9000"
 const ERR_CODE_OPERTYP = "4005"
 const ERR_CODE_EXISTED = "4040"
+const ERR_CODE_TOOBUSY = "6010"
+const ERR_CODE_VERIFY = "7020"
 
 const STATUS_DISABLED = 1
 const STATUS_ENABLED = 0
@@ -37,6 +43,13 @@ const FIELD_ERRORS = "errors"
 const DEFAULT_PWD = "123456"
 
 const EMPTY_STRING = ""
+
+const SMSTYPE_LOGIN = "login"
+const SMSTYPE_RESET = "reset"
+const SMS_STATUS_INIT = "i"
+const SMS_STATUS_END = "e"
+const SMSCODE_EXPIRED_MINUTE = 5
+const SMSCODE_MIN_INTERVAL = 10
 
 var (
 	ERROR_MAP map[string]string = map[string]string{
@@ -53,6 +66,8 @@ var (
 		ERR_CODE_OPERTYP: "ShowType类型错误:",
 		ERR_CODE_NOTFIND: "查询没发现提示:",
 		ERR_CODE_EXISTED: "注册账户已经存在:",
+		ERR_CODE_TOOBUSY: "短信发送太频繁:",
+		ERR_CODE_VERIFY:  "验证码校验错误:",
 	}
 )
 
@@ -184,4 +199,54 @@ func CheckToken(w http.ResponseWriter, req *http.Request) (string, string, error
 	}
 
 	return userId, maxTimes, nil
+}
+
+/*
+	说明：检查短信验证码是否合法
+	入参：
+	出参：参数1：Token
+		 参数1：Error
+*/
+
+func CheckSmsCode(userId int64, phone string, smsCode string) error {
+	PrintHead("CheckSmsCode")
+	var search smscode.Search
+	search.Phone = phone
+	search.UserId = userId
+	search.Status = SMS_STATUS_INIT
+	search.SmsCode = smsCode
+	r := smscode.New(dbcomm.GetDB(), smscode.DEBUG)
+	l, _ := r.GetList(search)
+	for _, v := range l {
+		local, _ := time.LoadLocation("Local")
+		endTime, _ := time.ParseInLocation("2006-01-02 15:04:05", v.ValidEtime, local)
+		if endTime.Before(time.Now()) {
+			continue
+		}
+		if v.SmsCode == smsCode {
+			m := map[string]interface{}{"status": SMS_STATUS_END}
+			err := r.UpdateMap(fmt.Sprintf("%d", v.Id), m, nil)
+			if err == nil {
+				fmt.Println("OK")
+				return nil
+			}
+		}
+	}
+	PrintTail("CheckSmsCode")
+	return errors.New("短信验证码不合法")
+
+}
+
+/*
+	说明：检查短信验证码是否合法
+	入参：
+	出参：参数1：Token
+		 参数1：Error
+*/
+
+func CheckCaptchaCode(idKey string, verifyValue string) bool {
+	PrintHead("CheckCaptchaCode")
+	verifyResult := base64Captcha.VerifyCaptcha(idKey, verifyValue)
+	PrintTail("CheckCaptchaCode")
+	return verifyResult
 }

@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-	//	"github.com/mojocn/base64Captcha"
 )
 
 /*
@@ -28,19 +27,6 @@ type LoginResp struct {
 	Unionid     string `json:"unionid"`
 	Errcode     int    `json:"errcode"`
 	Errmsg      string `json:"errmsg"`
-}
-
-/*
-	获取图形验证码
-*/
-type Capture_Request struct {
-	UserName string `json:"user_name"`
-}
-
-type Capture_Response struct {
-	ErrCode   string `json:"err_code"`
-	ErrMsg    string `json:"err_msg"`
-	PicBase64 string `json:"pic_base64"`
 }
 
 /*
@@ -207,45 +193,4 @@ func SignOut(w http.ResponseWriter, req *http.Request) {
 	resp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS] + "退出成功！"
 	common.Write_Response(resp, w, req)
 
-}
-
-/*
-	获取图形验证码
-*/
-func GetCaptchas(w http.ResponseWriter, r *http.Request) {
-	//	log.Println(comm.BEGIN_TAG, "GetCaptchas......")
-
-	//	t1 := time.Now()
-	//	var cap_req comm.Wait_Capture_Request
-	//	err := json.NewDecoder(r.Body).Decode(&cap_req)
-	//	if err != nil {
-	//		Write_Response(comm.RESP_JSON_ERROR, w, r)
-	//		return
-	//	}
-	//	defer r.Body.Close()
-
-	//	//数字验证码配置
-	//	var configD = base64Captcha.ConfigDigit{
-	//		Height:     80,
-	//		Width:      200,
-	//		MaxSkew:    0.7,
-	//		DotCount:   80,
-	//		CaptchaLen: 5,
-	//	}
-
-	//	idKeyD, capD := base64Captcha.GenerateCaptcha("", configD)
-	//	//以base64编码
-	//	base64stringD := base64Captcha.CaptchaWriteToBase64Encoding(capD)
-	//	fmt.Println(idKeyD, base64stringD)
-
-	//	user := comm.Wait_User{Login_name: cap_req.Login_name, Last_pic_code: idKeyD}
-	//	err = db.Update_User_PicCode(user)
-	//	if err != nil {
-	//		log.Println("=========>", err.Error())
-	//		Write_Response(comm.RESP_DB_ERROR, w, r)
-	//		return
-	//	}
-	//	cap_resp := comm.Wait_Capture_Response{comm.RESP_SUCC.Status_code, comm.RESP_SUCC.Status_msg, base64stringD}
-	//	common.Write_Response("", w, req)
-	//	log.Println(comm.END_TAG, "GetCaptchas......", time.Since(t1))
 }

@@ -20,6 +20,7 @@ import (
 type SignUpReq struct {
 	UserName string `json:"user_name"`
 	PassWord string `json:"pass_word"`
+	SmsCode  string `json:"sms_code"`
 }
 
 /*
@@ -54,15 +55,19 @@ func SignUp(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("SignUp")
 	var signupReq SignUpReq
 	var signupResp SignUpResp
-
-	log.Println(req.Method)
-
 	err := json.NewDecoder(req.Body).Decode(&signupReq)
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
 	defer req.Body.Close()
+
+	if err := common.CheckSmsCode(0, signupReq.UserName, signupReq.SmsCode); err != nil {
+		signupResp.ErrCode = common.ERR_CODE_VERIFY
+		signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+		common.Write_Response(signupResp, w, req)
+		return
+	}
 
 	var search account.Search
 	search.LoginName = signupReq.UserName
@@ -77,14 +82,13 @@ func SignUp(w http.ResponseWriter, req *http.Request) {
 		var e account.Account
 		e.LoginName = signupReq.UserName
 		e.UserId = time.Now().Unix()
-
 		r.InsertEntity(e, nil)
 	}
+
 	signupResp.ErrCode = common.ERR_CODE_SUCCESS
 	signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(signupResp, w, req)
 	common.PrintTail("UpdateAccount")
-
 }
 
 /*
