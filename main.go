@@ -7,10 +7,12 @@ import (
 	"io"
 
 	"jcd/control/account"
+	"jcd/control/comment"
 	"jcd/control/flow"
 	"jcd/control/login"
 	"jcd/control/pwd"
 	"jcd/control/smscode"
+
 	"log"
 	"net/http"
 	"os"
@@ -46,6 +48,11 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/getsmscode", smscode.GetSmsCode)
 	http.HandleFunc("/jc/api/checksmscode", smscode.CheckSmsCode)
 	http.HandleFunc("/jc/api/getcaptcha", smscode.GetCaptchas)
+
+	http.HandleFunc("/jc/api/commlist", comment.CommentList)
+	http.HandleFunc("/jc/api/postcomm", comment.CommentPost)
+	http.HandleFunc("/jc/api/likecomm", comment.CommentLike)
+	http.HandleFunc("/jc/api/killcomm", comment.CommentKill)
 
 	http_srv = &http.Server{
 		Addr: ":8087",

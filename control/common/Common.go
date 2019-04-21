@@ -40,6 +40,11 @@ const STATUS_INIT = "i"
 const FIELD_LOGIN_PASS = "login_pass"
 const FIELD_ERRORS = "errors"
 
+const FIELD_KILLS = "kills"
+const FIELD_LIKES = "likes"
+const FIELD_UPDATE_TIME = "update_time"
+const FIELD_UPDATE_USER = "update_user"
+
 const DEFAULT_PWD = "123456"
 
 const EMPTY_STRING = ""
@@ -50,6 +55,8 @@ const SMS_STATUS_INIT = "i"
 const SMS_STATUS_END = "e"
 const SMSCODE_EXPIRED_MINUTE = 5
 const SMSCODE_MIN_INTERVAL = 10
+
+const COMMENT_INIT_VALUE = 0
 
 var (
 	ERROR_MAP map[string]string = map[string]string{

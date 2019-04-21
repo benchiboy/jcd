@@ -17,7 +17,9 @@ import (
 	查询输入条件
 */
 type FindLoanReq struct {
-	KeyNo string `json:"key_no"`
+	KeyNo    string `json:"key_no"`
+	PageNo   int    `json:"page_no"`
+	PageSize int    `json:"page_no"`
 }
 
 /*
@@ -166,9 +168,7 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 	e.TotalBalAmt = "20200.00"
 
 	searchResp.ErrCode = common.ERR_CODE_SUCCESS
-
 	searchResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
-
 	searchResp.LoanList = append(searchResp.LoanList, e)
 	searchResp.LoanList = append(searchResp.LoanList, e)
 	searchResp.Total = len(searchResp.LoanList)
