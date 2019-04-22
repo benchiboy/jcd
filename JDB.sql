@@ -29,7 +29,7 @@ CREATE TABLE `b_account` (
   `login_name` varchar(50) DEFAULT '' COMMENT '登录账号',
   `login_pass` varchar(50) DEFAULT '' COMMENT '密码',
   `status` tinyint(4) DEFAULT '0' COMMENT '当前用户状态: 0： 正常 1：密码错误锁定,2：账户人工冻结（资金不可进出）,3 :账户止付（账户不允许消费）, 4：账户止 入（账户不允充值）',
-  `avatar_url` varchar(100) DEFAULT NULL COMMENT '用户头像URL',
+  `avatar_url` varchar(100) DEFAULT '' COMMENT '用户头像URL',
   `nick_name` varchar(100) DEFAULT '' COMMENT '昵称',
   `gender` tinyint(1) DEFAULT '0' COMMENT '性别',
   `city` varchar(100) DEFAULT '' COMMENT '城市',
@@ -165,3 +165,51 @@ CREATE TABLE `b_smscode` (
   KEY `idx_user_phone` (`phone`) USING BTREE,
   KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=162 DEFAULT CHARSET=utf8 COMMENT='短信校验码记录表';
+
+
+DROP TABLE IF EXISTS `b_index`;
+CREATE TABLE `b_index` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `index_subject` varchar(50) DEFAULT NULL COMMENT '指标主题',
+  `index_category` varchar(50) DEFAULT NULL COMMENT '指标种类',
+  `index_name` varchar(50) DEFAULT '0' COMMENT '指标名称',
+  `index_value` decimal(10,2) DEFAULT NULL COMMENT '指标值',
+  `index_date` int(11) DEFAULT NULL COMMENT '指标日期',
+  `insert_time` datetime DEFAULT NULL COMMENT '插入时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `version` int(11) unsigned DEFAULT '0' COMMENT '版本',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='观察指标表';
+
+
+DROP TABLE IF EXISTS `b_badloan`;
+CREATE TABLE `b_badloan` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `mct_no` varchar(10) DEFAULT '' COMMENT '商户编号',
+  `loan_no` varchar(50) DEFAULT '' COMMENT '合同号',
+  `user_name` varchar(50) DEFAULT '' COMMENT '用户姓名',
+  `id_no` varchar(21) DEFAULT '' COMMENT '证件号',
+  `addr` varchar(250) DEFAULT '' COMMENT '住址',
+  `gender` varchar(2) DEFAULT '' COMMENT '性别',
+  `phone` varchar(21) DEFAULT '' COMMENT '电话',
+  `memo` varchar(1024) NOT NULL DEFAULT '' COMMENT '备注',
+  `status` char(1) DEFAULT '' COMMENT '状态',
+  `insert_time` datetime DEFAULT NULL COMMENT '插入时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `update_user` varchar(50) DEFAULT '' COMMENT '人工调整交易的用户ID',
+  `version` int(11) unsigned DEFAULT '0' COMMENT '版本',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='坏账用户表';
+
+
+DROP TABLE IF EXISTS `b_comment_user`;
+CREATE TABLE `b_comment_user` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `action_type` tinyint(4) DEFAULT NULL COMMENT '动作类型',
+  `comm_no` bigint(20) DEFAULT '0' COMMENT '评论编号',
+  `user_id` int(11) unsigned DEFAULT '0' COMMENT '账户ID',
+  `insert_time` datetime DEFAULT NULL COMMENT '插入时间',
+  `version` int(11) unsigned DEFAULT '0' COMMENT '版本',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='评论对应的用户表';

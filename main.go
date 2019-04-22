@@ -11,7 +11,12 @@ import (
 	"jcd/control/flow"
 	"jcd/control/login"
 	"jcd/control/pwd"
+
 	"jcd/control/smscode"
+
+	"jcd/control/badloan"
+
+	"jcd/control/index"
 
 	"log"
 	"net/http"
@@ -53,6 +58,8 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/postcomm", comment.CommentPost)
 	http.HandleFunc("/jc/api/likecomm", comment.CommentLike)
 	http.HandleFunc("/jc/api/killcomm", comment.CommentKill)
+	http.HandleFunc("/jc/api/badpindex", index.BadPLoanList)
+	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
 
 	http_srv = &http.Server{
 		Addr: ":8087",
