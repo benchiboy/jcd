@@ -3,8 +3,6 @@ package index
 import (
 	"encoding/json"
 	"jcd/control/common"
-
-	//	"fmt"
 	"jcd/service/dbcomm"
 	"jcd/service/index"
 	"net/http"
@@ -71,37 +69,55 @@ func BadPLoanList(w http.ResponseWriter, req *http.Request) {
 	search.PageNo = listReq.PageNo
 	search.PageSize = listReq.PageSize
 	r := index.New(dbcomm.GetDB(), index.DEBUG)
-	l, err := r.GetList(search)
 
-	lengMap := make(map[string]string, 0)
+	l, err := r.GetList(search)
+	if len(l) == 0 {
+		listResp.ErrCode = common.ERR_CODE_NOTFIND
+		listResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_NOTFIND]
+		common.Write_Response(listResp, w, req)
+		return
+	}
 
 	legendSlice := make([]string, 0)
 	xSlice := make([]XAxisItem, 0)
-	ySlice := make([]YAxisItem, 0)
-	sSeriesSlice := make([]Series, 0)
+	var bTag bool
+	var category string
+	category = l[0].IndexCategory
+	legendSlice = append(legendSlice, l[0].IndexCategory)
 
+	var xi XAxisItem
+	for _, v := range l {
+		if v.IndexCategory != category {
+			legendSlice = append(legendSlice, v.IndexCategory)
+			category = v.IndexCategory
+			bTag = true
+		} else {
+			if !bTag {
+				xi.Type = "category"
+				xi.Data = append(xi.Data, v.IndexName)
+			}
+		}
+	}
+
+	xSlice = append(xSlice, xi)
 	var yi YAxisItem
+	ySlice := make([]YAxisItem, 0)
 	yi.Type = "value"
 	ySlice = append(ySlice, yi)
 
-	var xi XAxisItem
-	xi.Type = "category"
-
-	var si Series
-	for _, v := range l {
-		lengMap[v.IndexCategory] = v.IndexCategory
-		xi.Data = append(xi.Data, v.IndexName)
-		si.Data = append(si.Data, v.IndexValue)
-	}
-	for _, v := range lengMap {
-		legendSlice = append(legendSlice, v)
-	}
-	xSlice = append(xSlice, xi)
-	for _, v := range lengMap {
-		si.Type = "bar"
+	sSeriesSlice := make([]Series, 0)
+	category = common.EMPTY_STRING
+	for _, v := range legendSlice {
+		var si Series
+		for _, v1 := range l {
+			if v1.IndexCategory == v {
+				si.Data = append(si.Data, v1.IndexValue)
+			}
+		}
 		si.Name = v
+		si.Type = "bar"
+		sSeriesSlice = append(sSeriesSlice, si)
 	}
-	sSeriesSlice = append(sSeriesSlice, si)
 	listResp.ErrCode = common.ERR_CODE_SUCCESS
 	listResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	listResp.Legend = legendSlice

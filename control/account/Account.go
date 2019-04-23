@@ -62,12 +62,12 @@ func SignUp(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	if err := common.CheckSmsCode(0, signupReq.UserName, signupReq.SmsCode); err != nil {
-		signupResp.ErrCode = common.ERR_CODE_VERIFY
-		signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
-		common.Write_Response(signupResp, w, req)
-		return
-	}
+	//	if err := common.CheckSmsCode(0, signupReq.UserName, signupReq.SmsCode); err != nil {
+	//		signupResp.ErrCode = common.ERR_CODE_VERIFY
+	//		signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+	//		common.Write_Response(signupResp, w, req)
+	//		return
+	//	}
 
 	var search account.Search
 	search.LoginName = signupReq.UserName

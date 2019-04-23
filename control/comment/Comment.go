@@ -67,9 +67,8 @@ type CommentKillResp struct {
 	投递一评论
 */
 type CommentPostReq struct {
-	ParentCommNo string `json:"parent_comm_no"`
-	Title        string `json:"title"`
-	Context      string `json:"context"`
+	Title   string `json:"title"`
+	Context string `json:"context"`
 }
 
 /*
@@ -81,10 +80,28 @@ type CommentPostResp struct {
 }
 
 /*
+	回复一评论请求
+*/
+type CommentReplyReq struct {
+	CommNo  string `json:"comm_no"`
+	Title   string `json:"title"`
+	Context string `json:"context"`
+}
+
+/*
+	回复一评论应答
+*/
+type CommentReplyResp struct {
+	Title   string `json:"title"`
+	Context string `json:"context"`
+}
+
+/*
 	获取用户发送的评论列表
 */
 
 func CommentList(w http.ResponseWriter, req *http.Request) {
+
 	_, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return

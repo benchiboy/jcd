@@ -102,13 +102,15 @@ func GetSmsCode(w http.ResponseWriter, req *http.Request) {
 	}
 
 	defer req.Body.Close()
+
 	//验证图形验证码
-	if !common.CheckCaptchaCode(smsCodeReq.IdKey, smsCodeReq.VerifyCode) {
-		smsCodeResp.ErrCode = common.ERR_CODE_VERIFY
-		smsCodeResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
-		common.Write_Response(smsCodeResp, w, req)
-		return
-	}
+	//	if !common.CheckCaptchaCode(smsCodeReq.IdKey, smsCodeReq.VerifyCode) {
+	//		smsCodeResp.ErrCode = common.ERR_CODE_VERIFY
+	//		smsCodeResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+	//		common.Write_Response(smsCodeResp, w, req)
+	//		return
+	//	}
+
 	var search smscode.Search
 	search.UserId = uId
 	if smsCodeReq.Phone != common.EMPTY_STRING {
