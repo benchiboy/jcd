@@ -49,18 +49,20 @@ type CommentList struct {
 }
 
 type Comment struct {
-	Id           int64  `json:"id"`
-	UserId       int64  `json:"user_id"`
-	ParentCommNo int64  `json:"parent_comm_no"`
-	CommNo       int64  `json:"comm_no"`
-	Title        string `json:"title"`
-	Context      string `json:"context"`
-	Kills        int64  `json:"kills"`
-	Likes        int64  `json:"likes"`
-	InsertTime   string `json:"insert_time"`
-	UpdateTime   string `json:"update_time"`
-	UpdateUser   string `json:"update_user"`
-	Version      int64  `json:"version"`
+	Id           int64     `json:"id"`
+	UserId       int64     `json:"user_id"`
+	AvatarUrl    string    `json:"avatar_url"`
+	ParentCommNo int64     `json:"parent_comm_no"`
+	CommNo       int64     `json:"comm_no"`
+	Title        string    `json:"title"`
+	Context      string    `json:"context"`
+	Kills        int64     `json:"kills"`
+	Likes        int64     `json:"likes"`
+	InsertTime   string    `json:"insert_time"`
+	UpdateTime   string    `json:"update_time"`
+	UpdateUser   string    `json:"update_user"`
+	Version      int64     `json:"version"`
+	ReplyList    []Comment `json:"reply_list"`
 }
 
 type Form struct {
@@ -285,6 +287,8 @@ func (r *CommentList) GetList(s Search) ([]Comment, error) {
 
 	if s.ParentCommNo != 0 {
 		where += " and parent_comm_no=" + fmt.Sprintf("%d", s.ParentCommNo)
+	} else {
+		where += " and parent_comm_no=0"
 	}
 
 	if s.CommNo != 0 {
@@ -329,9 +333,9 @@ func (r *CommentList) GetList(s Search) ([]Comment, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select id,user_id,parent_comm_no,comm_no,title,context,kills,likes,insert_time,update_time,update_user,version from b_comment where 1=1 %s", where)
+		qrySql = fmt.Sprintf("Select a.id,a.user_id,b.avatar_url,parent_comm_no,comm_no,title,context,kills,likes,insert_time,update_time,update_user,a.version from b_comment a ,b_account b where 1=1 %s and a.user_id=b.user_id", where)
 	} else {
-		qrySql = fmt.Sprintf("Select id,user_id,parent_comm_no,comm_no,title,context,kills,likes,insert_time,update_time,update_user,version from b_comment where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select a.id,a.user_id,b.avatar_url,parent_comm_no,comm_no,title,context,kills,likes,insert_time,update_time,update_user,a.version from b_comment a ,b_account b where 1=1 %s and a.user_id=b.user_id  Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -345,7 +349,7 @@ func (r *CommentList) GetList(s Search) ([]Comment, error) {
 
 	var p Comment
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.ParentCommNo, &p.CommNo, &p.Title, &p.Context, &p.Kills, &p.Likes, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		rows.Scan(&p.Id, &p.UserId, &p.AvatarUrl, &p.ParentCommNo, &p.CommNo, &p.Title, &p.Context, &p.Kills, &p.Likes, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		r.Comments = append(r.Comments, p)
 	}
 	log.Println(SQL_ELAPSED, r)
@@ -890,6 +894,96 @@ func (r CommentList) UpdateMap(keyNo string, m map[string]interface{}, tr *sql.T
 	valSlice = append(valSlice, keyNo)
 	colNames = strings.TrimRight(colNames, ",")
 	updateSql := fmt.Sprintf("Update b_comment set %s ,version=version+1 where id=?", colNames)
+	if r.Level == DEBUG {
+		log.Println(SQL_UPDATE, updateSql)
+	}
+	var stmt *sql.Stmt
+	var err error
+	if tr == nil {
+		stmt, err = r.DB.Prepare(updateSql)
+	} else {
+		stmt, err = tr.Prepare(updateSql)
+	}
+
+	if err != nil {
+		log.Println(SQL_ERROR, err.Error())
+		return err
+	}
+	ret, err := stmt.Exec(valSlice...)
+	if err != nil {
+		log.Println(SQL_UPDATE, "Update data error: %v\n", err)
+		return err
+	}
+	defer stmt.Close()
+
+	if LastInsertId, err := ret.LastInsertId(); nil == err {
+		log.Println(SQL_UPDATE, "LastInsertId:", LastInsertId)
+	}
+	if RowsAffected, err := ret.RowsAffected(); nil == err {
+		log.Println(SQL_UPDATE, "RowsAffected:", RowsAffected)
+	}
+	if r.Level == DEBUG {
+		log.Println(SQL_ELAPSED, time.Since(l))
+	}
+	return nil
+}
+
+/*
+	说明：根据更新主键及更新Map值更新数据表；
+	入参：keyNo:更新数据的关键条件，m:更新数据列的Map
+	出参：参数1：如果出错，返回错误对象；成功返回nil
+*/
+
+func (r CommentList) UpdateLikes(keyNo string, tr *sql.Tx) error {
+	l := time.Now()
+	valSlice := make([]interface{}, 0)
+	valSlice = append(valSlice, keyNo)
+	updateSql := fmt.Sprintf("Update b_comment set likes=likes+1 ,version=version+1 where comm_no=?")
+	if r.Level == DEBUG {
+		log.Println(SQL_UPDATE, updateSql)
+	}
+	var stmt *sql.Stmt
+	var err error
+	if tr == nil {
+		stmt, err = r.DB.Prepare(updateSql)
+	} else {
+		stmt, err = tr.Prepare(updateSql)
+	}
+
+	if err != nil {
+		log.Println(SQL_ERROR, err.Error())
+		return err
+	}
+	ret, err := stmt.Exec(valSlice...)
+	if err != nil {
+		log.Println(SQL_UPDATE, "Update data error: %v\n", err)
+		return err
+	}
+	defer stmt.Close()
+
+	if LastInsertId, err := ret.LastInsertId(); nil == err {
+		log.Println(SQL_UPDATE, "LastInsertId:", LastInsertId)
+	}
+	if RowsAffected, err := ret.RowsAffected(); nil == err {
+		log.Println(SQL_UPDATE, "RowsAffected:", RowsAffected)
+	}
+	if r.Level == DEBUG {
+		log.Println(SQL_ELAPSED, time.Since(l))
+	}
+	return nil
+}
+
+/*
+	说明：根据更新主键及更新Map值更新数据表；
+	入参：keyNo:更新数据的关键条件，m:更新数据列的Map
+	出参：参数1：如果出错，返回错误对象；成功返回nil
+*/
+
+func (r CommentList) UpdateKills(keyNo string, tr *sql.Tx) error {
+	l := time.Now()
+	valSlice := make([]interface{}, 0)
+	valSlice = append(valSlice, keyNo)
+	updateSql := fmt.Sprintf("Update b_comment set kills=kills+1 ,version=version+1 where comm_no=?")
 	if r.Level == DEBUG {
 		log.Println(SQL_UPDATE, updateSql)
 	}

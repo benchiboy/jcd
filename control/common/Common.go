@@ -57,6 +57,9 @@ const SMSCODE_EXPIRED_MINUTE = 5
 const SMSCODE_MIN_INTERVAL = 10
 
 const COMMENT_INIT_VALUE = 0
+const COMMENT_LIKE = 10
+const COMMENT_KILL = 20
+const COMMENT_REPLY = 30
 
 var (
 	ERROR_MAP map[string]string = map[string]string{

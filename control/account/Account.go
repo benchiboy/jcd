@@ -81,14 +81,15 @@ func SignUp(w http.ResponseWriter, req *http.Request) {
 	} else {
 		var e account.Account
 		e.LoginName = signupReq.UserName
+		e.LoginPass = signupReq.PassWord
 		e.UserId = time.Now().Unix()
 		r.InsertEntity(e, nil)
 	}
-
 	signupResp.ErrCode = common.ERR_CODE_SUCCESS
 	signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(signupResp, w, req)
-	common.PrintTail("UpdateAccount")
+
+	common.PrintTail("SignUp")
 }
 
 /*

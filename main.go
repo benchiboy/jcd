@@ -58,10 +58,12 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/postcomm", comment.CommentPost)
 	http.HandleFunc("/jc/api/likecomm", comment.CommentLike)
 	http.HandleFunc("/jc/api/killcomm", comment.CommentKill)
+	http.HandleFunc("/jc/api/replycomm", comment.CommentReply)
+
 	http.HandleFunc("/jc/api/badpindex", index.BadPLoanList)
 	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
 
-	http_srv = &http.Server{
+		http_srv = &http.Server{
 		Addr: ":8087",
 	}
 	log.Printf("listen:")

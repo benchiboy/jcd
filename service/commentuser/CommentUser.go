@@ -184,7 +184,7 @@ func (r CommentUserList) Get(s Search) (*CommentUser, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,action_type,comm_no,user_id,insert_time,version from b_comment_user where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,action_type,comm_no,user_id,version from b_comment_user where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -199,7 +199,7 @@ func (r CommentUserList) Get(s Search) (*CommentUser, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.ActionType, &p.CommNo, &p.UserId, &p.InsertTime, &p.Version)
+		err := rows.Scan(&p.Id, &p.ActionType, &p.CommNo, &p.UserId, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
