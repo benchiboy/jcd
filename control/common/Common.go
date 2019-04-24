@@ -35,7 +35,7 @@ const ERR_CODE_JSONERR = "2001"
 const ERR_CODE_URLERR = "2005"
 const ERR_CODE_NOTFIND = "3000"
 const ERR_CODE_NOMATCH = "3010"
-const ERR_CODE_EXPIRED = "8000"
+const ERR_CODE_EXPIRED = "6000"
 const ERR_CODE_TYPEERR = "4000"
 const ERR_CODE_STATUS = "5000"
 const ERR_CODE_FAILED = "9000"
@@ -44,12 +44,16 @@ const ERR_CODE_EXISTED = "4040"
 const ERR_CODE_TOOBUSY = "6010"
 const ERR_CODE_VERIFY = "7020"
 
+const ERR_CODE_PAYERR = "8010"
+
 const STATUS_DISABLED = 1
 const STATUS_ENABLED = 0
 const STATUS_SUCC = "S"
+const STATUS_INIT = "I"
 const STATUS_FAIL = "F"
+const STATUS_DOING = "D"
+
 const MAX_SEARCH_TIMES = "5"
-const STATUS_INIT = "i"
 
 const FIELD_LOGIN_PASS = "login_pass"
 const FIELD_ERRORS = "errors"
@@ -59,6 +63,8 @@ const FIELD_UPDATE_TIME = "update_time"
 const FIELD_UPDATE_USER = "update_user"
 const FIELD_PROC_STATUS = "proc_status"
 const FIELD_PROC_MSG = "proc_msg"
+const FIELD_PREPAY_ID = "prpay_id"
+const FIELD_CODE_URL = "code_url"
 
 const DEFAULT_PWD = "123456"
 const SUCC_MSG = "success"
@@ -68,6 +74,7 @@ const SMSTYPE_LOGIN = "login"
 const SMSTYPE_RESET = "reset"
 const SMS_STATUS_INIT = "i"
 const SMS_STATUS_END = "e"
+
 const SMSCODE_EXPIRED_MINUTE = 5
 const SMSCODE_MIN_INTERVAL = 10
 
@@ -93,6 +100,7 @@ var (
 		ERR_CODE_EXISTED: "注册账户已经存在:",
 		ERR_CODE_TOOBUSY: "短信发送太频繁:",
 		ERR_CODE_VERIFY:  "验证码校验错误:",
+		ERR_CODE_PAYERR:  "支付交易失败:",
 	}
 )
 

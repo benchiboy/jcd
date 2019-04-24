@@ -3,6 +3,7 @@ package flow
 import (
 	"database/sql"
 	"fmt"
+	"hcd-gate/service/pubtype"
 	"log"
 	"strings"
 	"time"
@@ -27,13 +28,15 @@ type Search struct {
 	MctNo      string  `json:"mct_no"`
 	MctTrxnNo  string  `json:"mct_trxn_no"`
 	TrxnNo     int64   `json:"trxn_no"`
-	TrxnDate   string  `json:"trxn_date"`
-	TrxnAmt    float64 `json:"trxn_amt"`
+	TrxnAmt    int     `json:"trxn_amt"`
 	TrxnType   string  `json:"trxn_type"`
 	ProcStatus string  `json:"proc_status"`
 	ProcMsg    string  `json:"proc_msg"`
 	AccountBal float64 `json:"account_bal"`
+	CodeUrl    string  `json:"code_url"`
+	PrpayId    string  `json:"prpay_id"`
 	TrxnMemo   string  `json:"trxn_memo"`
+	TrxnDate   string  `json:"trxn_date"`
 	DoneDate   string  `json:"done_date"`
 	InsertTime string  `json:"insert_time"`
 	UpdateTime string  `json:"update_time"`
@@ -58,13 +61,15 @@ type Flow struct {
 	MctNo      string  `json:"mct_no"`
 	MctTrxnNo  string  `json:"mct_trxn_no"`
 	TrxnNo     int64   `json:"trxn_no"`
-	TrxnDate   string  `json:"trxn_date"`
-	TrxnAmt    float64 `json:"trxn_amt"`
+	TrxnAmt    int     `json:"trxn_amt"`
 	TrxnType   string  `json:"trxn_type"`
 	ProcStatus string  `json:"proc_status"`
 	ProcMsg    string  `json:"proc_msg"`
 	AccountBal float64 `json:"account_bal"`
+	CodeUrl    string  `json:"code_url"`
+	PrpayId    string  `json:"prpay_id"`
 	TrxnMemo   string  `json:"trxn_memo"`
+	TrxnDate   string  `json:"trxn_date"`
 	DoneDate   string  `json:"done_date"`
 	InsertTime string  `json:"insert_time"`
 	UpdateTime string  `json:"update_time"`
@@ -140,12 +145,8 @@ func (r *FlowList) GetTotal(s Search) (int, error) {
 		where += " and trxn_no=" + fmt.Sprintf("%d", s.TrxnNo)
 	}
 
-	if s.TrxnDate != "" {
-		where += " and trxn_date='" + s.TrxnDate + "'"
-	}
-
 	if s.TrxnAmt != 0 {
-		where += " and trxn_amt=" + fmt.Sprintf("%f", s.TrxnAmt)
+		where += " and trxn_amt=" + fmt.Sprintf("%d", s.TrxnAmt)
 	}
 
 	if s.TrxnType != "" {
@@ -164,8 +165,20 @@ func (r *FlowList) GetTotal(s Search) (int, error) {
 		where += " and account_bal=" + fmt.Sprintf("%f", s.AccountBal)
 	}
 
+	if s.CodeUrl != "" {
+		where += " and code_url='" + s.CodeUrl + "'"
+	}
+
+	if s.PrpayId != "" {
+		where += " and prpay_id='" + s.PrpayId + "'"
+	}
+
 	if s.TrxnMemo != "" {
 		where += " and trxn_memo='" + s.TrxnMemo + "'"
+	}
+
+	if s.TrxnDate != "" {
+		where += " and trxn_date='" + s.TrxnDate + "'"
 	}
 
 	if s.DoneDate != "" {
@@ -242,12 +255,8 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += " and trxn_no=" + fmt.Sprintf("%d", s.TrxnNo)
 	}
 
-	if s.TrxnDate != "" {
-		where += " and trxn_date='" + s.TrxnDate + "'"
-	}
-
 	if s.TrxnAmt != 0 {
-		where += " and trxn_amt=" + fmt.Sprintf("%f", s.TrxnAmt)
+		where += " and trxn_amt=" + fmt.Sprintf("%d", s.TrxnAmt)
 	}
 
 	if s.TrxnType != "" {
@@ -266,8 +275,20 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += " and account_bal=" + fmt.Sprintf("%f", s.AccountBal)
 	}
 
+	if s.CodeUrl != "" {
+		where += " and code_url='" + s.CodeUrl + "'"
+	}
+
+	if s.PrpayId != "" {
+		where += " and prpay_id='" + s.PrpayId + "'"
+	}
+
 	if s.TrxnMemo != "" {
 		where += " and trxn_memo='" + s.TrxnMemo + "'"
+	}
+
+	if s.TrxnDate != "" {
+		where += " and trxn_date='" + s.TrxnDate + "'"
 	}
 
 	if s.DoneDate != "" {
@@ -294,7 +315,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_date,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,trxn_memo,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -309,7 +330,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnDate, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.TrxnMemo, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrpayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -352,12 +373,8 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 		where += " and trxn_no=" + fmt.Sprintf("%d", s.TrxnNo)
 	}
 
-	if s.TrxnDate != "" {
-		where += " and trxn_date='" + s.TrxnDate + "'"
-	}
-
 	if s.TrxnAmt != 0 {
-		where += " and trxn_amt=" + fmt.Sprintf("%f", s.TrxnAmt)
+		where += " and trxn_amt=" + fmt.Sprintf("%d", s.TrxnAmt)
 	}
 
 	if s.TrxnType != "" {
@@ -376,8 +393,20 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 		where += " and account_bal=" + fmt.Sprintf("%f", s.AccountBal)
 	}
 
+	if s.CodeUrl != "" {
+		where += " and code_url='" + s.CodeUrl + "'"
+	}
+
+	if s.PrpayId != "" {
+		where += " and prpay_id='" + s.PrpayId + "'"
+	}
+
 	if s.TrxnMemo != "" {
 		where += " and trxn_memo='" + s.TrxnMemo + "'"
+	}
+
+	if s.TrxnDate != "" {
+		where += " and trxn_date='" + s.TrxnDate + "'"
 	}
 
 	if s.DoneDate != "" {
@@ -406,9 +435,9 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_date,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,trxn_memo,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s", where)
+		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s", where)
 	} else {
-		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_date,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,trxn_memo,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -422,7 +451,7 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 
 	var p Flow
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnDate, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.TrxnMemo, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrpayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		r.Flows = append(r.Flows, p)
 	}
 	log.Println(SQL_ELAPSED, r)
@@ -430,6 +459,152 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 		log.Println(SQL_ELAPSED, time.Since(l))
 	}
 	return r.Flows, nil
+}
+
+/*
+	说明：根据条件查询复核条件对象列表，支持分页查询
+	入参：s: 查询条件
+	出参：参数1：返回符合条件的对象列表, 参数2：如果错误返回错误对象
+*/
+
+func (r *FlowList) GetListExt(s Search, fList []string) ([][]pubtype.Data, error) {
+	var where string
+	l := time.Now()
+
+	if s.Id != 0 {
+		where += " and id=" + fmt.Sprintf("%d", s.Id)
+	}
+
+	if s.UserId != 0 {
+		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
+	}
+
+	if s.MctNo != "" {
+		where += " and mct_no='" + s.MctNo + "'"
+	}
+
+	if s.MctTrxnNo != "" {
+		where += " and mct_trxn_no='" + s.MctTrxnNo + "'"
+	}
+
+	if s.TrxnNo != 0 {
+		where += " and trxn_no=" + fmt.Sprintf("%d", s.TrxnNo)
+	}
+
+	if s.TrxnAmt != 0 {
+		where += " and trxn_amt=" + fmt.Sprintf("%d", s.TrxnAmt)
+	}
+
+	if s.TrxnType != "" {
+		where += " and trxn_type='" + s.TrxnType + "'"
+	}
+
+	if s.ProcStatus != "" {
+		where += " and proc_status='" + s.ProcStatus + "'"
+	}
+
+	if s.ProcMsg != "" {
+		where += " and proc_msg='" + s.ProcMsg + "'"
+	}
+
+	if s.AccountBal != 0 {
+		where += " and account_bal=" + fmt.Sprintf("%f", s.AccountBal)
+	}
+
+	if s.CodeUrl != "" {
+		where += " and code_url='" + s.CodeUrl + "'"
+	}
+
+	if s.PrpayId != "" {
+		where += " and prpay_id='" + s.PrpayId + "'"
+	}
+
+	if s.TrxnMemo != "" {
+		where += " and trxn_memo='" + s.TrxnMemo + "'"
+	}
+
+	if s.TrxnDate != "" {
+		where += " and trxn_date='" + s.TrxnDate + "'"
+	}
+
+	if s.DoneDate != "" {
+		where += " and done_date='" + s.DoneDate + "'"
+	}
+
+	if s.InsertTime != "" {
+		where += " and insert_time='" + s.InsertTime + "'"
+	}
+
+	if s.UpdateTime != "" {
+		where += " and update_time='" + s.UpdateTime + "'"
+	}
+
+	if s.UpdateUser != "" {
+		where += " and update_user='" + s.UpdateUser + "'"
+	}
+
+	if s.Version != 0 {
+		where += " and version=" + fmt.Sprintf("%d", s.Version)
+	}
+
+	if s.ExtraWhere != "" {
+		where += s.ExtraWhere
+	}
+
+	colNames := ""
+	for _, v := range fList {
+		colNames += v + ","
+
+	}
+	colNames = strings.TrimRight(colNames, ",")
+
+	var qrySql string
+	if s.PageSize == 0 && s.PageNo == 0 {
+		qrySql = fmt.Sprintf("Select %s from b_flow where 1=1 %s", colNames, where)
+	} else {
+		qrySql = fmt.Sprintf("Select %s from b_flow where 1=1 %s Limit %d offset %d", colNames, where, s.PageSize, (s.PageNo-1)*s.PageSize)
+	}
+	if r.Level == DEBUG {
+		log.Println(SQL_SELECT, qrySql)
+	}
+	rows, err := r.DB.Query(qrySql)
+	if err != nil {
+		log.Println(SQL_ERROR, err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	Columns, _ := rows.Columns()
+	values := make([]sql.RawBytes, len(Columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+
+	rowData := make([][]pubtype.Data, 0)
+	for rows.Next() {
+		err = rows.Scan(scanArgs...)
+		colData := make([]pubtype.Data, 0)
+		for k, _ := range values {
+			d := new(pubtype.Data)
+			d.FieldName = Columns[k]
+			d.FieldValue = string(values[k])
+			colData = append(colData, *d)
+		}
+		//extra flow_batch_id
+		d2 := new(pubtype.Data)
+		d2.FieldName = "flow_batch_id"
+		d2.FieldValue = string(values[0])
+		colData = append(colData, *d2)
+
+		rowData = append(rowData, colData)
+	}
+
+	log.Println(SQL_ELAPSED, "==========>>>>>>>>>>>", rowData)
+	if r.Level == DEBUG {
+		log.Println(SQL_ELAPSED, time.Since(l))
+	}
+	return rowData, nil
 }
 
 /*
@@ -462,12 +637,8 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 		where += " and trxn_no=" + fmt.Sprintf("%d", s.TrxnNo)
 	}
 
-	if s.TrxnDate != "" {
-		where += " and trxn_date='" + s.TrxnDate + "'"
-	}
-
 	if s.TrxnAmt != 0 {
-		where += " and trxn_amt=" + fmt.Sprintf("%f", s.TrxnAmt)
+		where += " and trxn_amt=" + fmt.Sprintf("%d", s.TrxnAmt)
 	}
 
 	if s.TrxnType != "" {
@@ -486,8 +657,20 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 		where += " and account_bal=" + fmt.Sprintf("%f", s.AccountBal)
 	}
 
+	if s.CodeUrl != "" {
+		where += " and code_url='" + s.CodeUrl + "'"
+	}
+
+	if s.PrpayId != "" {
+		where += " and prpay_id='" + s.PrpayId + "'"
+	}
+
 	if s.TrxnMemo != "" {
 		where += " and trxn_memo='" + s.TrxnMemo + "'"
+	}
+
+	if s.TrxnDate != "" {
+		where += " and trxn_date='" + s.TrxnDate + "'"
 	}
 
 	if s.DoneDate != "" {
@@ -510,7 +693,7 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 		where += " and version=" + fmt.Sprintf("%d", s.Version)
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_date,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,trxn_memo,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -556,11 +739,11 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 
 func (r FlowList) Insert(p Flow) error {
 	l := time.Now()
-	exeSql := fmt.Sprintf("Insert into  b_flow(user_id,mct_no,mct_trxn_no,trxn_no,trxn_date,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,trxn_memo,done_date,update_user,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	exeSql := fmt.Sprintf("Insert into  b_flow(user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,update_user,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if r.Level == DEBUG {
 		log.Println(SQL_INSERT, exeSql)
 	}
-	_, err := r.DB.Exec(exeSql, p.UserId, p.MctNo, p.MctTrxnNo, p.TrxnNo, p.TrxnDate, p.TrxnAmt, p.TrxnType, p.ProcStatus, p.ProcMsg, p.AccountBal, p.TrxnMemo, p.DoneDate, p.UpdateUser, p.Version)
+	_, err := r.DB.Exec(exeSql, p.UserId, p.MctNo, p.MctTrxnNo, p.TrxnNo, p.TrxnAmt, p.TrxnType, p.ProcStatus, p.ProcMsg, p.AccountBal, p.CodeUrl, p.PrpayId, p.TrxnMemo, p.TrxnDate, p.DoneDate, p.UpdateUser, p.Version)
 	if err != nil {
 		log.Println(SQL_ERROR, err.Error())
 		return err
@@ -606,13 +789,7 @@ func (r FlowList) InsertEntity(p Flow, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.TrxnNo)
 	}
 
-	if p.TrxnDate != "" {
-		colNames += "trxn_date,"
-		colTags += "?,"
-		valSlice = append(valSlice, p.TrxnDate)
-	}
-
-	if p.TrxnAmt != 0.00 {
+	if p.TrxnAmt != 0 {
 		colNames += "trxn_amt,"
 		colTags += "?,"
 		valSlice = append(valSlice, p.TrxnAmt)
@@ -642,10 +819,28 @@ func (r FlowList) InsertEntity(p Flow, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.AccountBal)
 	}
 
+	if p.CodeUrl != "" {
+		colNames += "code_url,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.CodeUrl)
+	}
+
+	if p.PrpayId != "" {
+		colNames += "prpay_id,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.PrpayId)
+	}
+
 	if p.TrxnMemo != "" {
 		colNames += "trxn_memo,"
 		colTags += "?,"
 		valSlice = append(valSlice, p.TrxnMemo)
+	}
+
+	if p.TrxnDate != "" {
+		colNames += "trxn_date,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.TrxnDate)
 	}
 
 	if p.DoneDate != "" {
@@ -797,13 +992,7 @@ func (r FlowList) UpdataEntity(keyNo string, p Flow, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.TrxnNo)
 	}
 
-	if p.TrxnDate != "" {
-		colNames += "trxn_date=?,"
-
-		valSlice = append(valSlice, p.TrxnDate)
-	}
-
-	if p.TrxnAmt != 0.00 {
+	if p.TrxnAmt != 0 {
 		colNames += "trxn_amt=?,"
 		valSlice = append(valSlice, p.TrxnAmt)
 	}
@@ -831,10 +1020,28 @@ func (r FlowList) UpdataEntity(keyNo string, p Flow, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.AccountBal)
 	}
 
+	if p.CodeUrl != "" {
+		colNames += "code_url=?,"
+
+		valSlice = append(valSlice, p.CodeUrl)
+	}
+
+	if p.PrpayId != "" {
+		colNames += "prpay_id=?,"
+
+		valSlice = append(valSlice, p.PrpayId)
+	}
+
 	if p.TrxnMemo != "" {
 		colNames += "trxn_memo=?,"
 
 		valSlice = append(valSlice, p.TrxnMemo)
+	}
+
+	if p.TrxnDate != "" {
+		colNames += "trxn_date=?,"
+
+		valSlice = append(valSlice, p.TrxnDate)
 	}
 
 	if p.DoneDate != "" {
@@ -923,7 +1130,7 @@ func (r FlowList) UpdateMap(keyNo string, m map[string]interface{}, tr *sql.Tx) 
 	}
 	valSlice = append(valSlice, keyNo)
 	colNames = strings.TrimRight(colNames, ",")
-	updateSql := fmt.Sprintf("Update b_flow set %s where mct_trxn_no=?", colNames)
+	updateSql := fmt.Sprintf("Update b_flow set %s where trxn_no=?", colNames)
 	if r.Level == DEBUG {
 		log.Println(SQL_UPDATE, updateSql)
 	}

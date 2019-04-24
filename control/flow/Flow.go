@@ -54,7 +54,7 @@ type Loan struct {
 type RepayReq struct {
 	MctNo    string `json:"mct_no"`
 	LoanNo   string `json:"loan_no"`
-	RepayAmt string `json:"repay_amt"`
+	RepayAmt int    `json:"repay_amt"`
 }
 
 /*
@@ -210,8 +210,7 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 	} else {
 		var e flow.Flow
 		e.MctNo = repayReq.MctNo
-		f, _ := strconv.ParseFloat(repayReq.RepayAmt, 64)
-		e.TrxnAmt = f
+		e.TrxnAmt = repayReq.RepayAmt
 		uid, _ := strconv.ParseInt(userId, 10, 64)
 		e.UserId = uid
 		e.MctTrxnNo = repayReq.LoanNo
@@ -225,7 +224,23 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 			common.Write_Response(repayResp, w, req)
 			return
 		}
-		payutil.UnionPayOrder(fmt.Sprintf("%d", e.TrxnNo), 1)
+		prePayId, codeUrl, err := payutil.UnionPayOrder(fmt.Sprintf("%d", e.TrxnNo), e.TrxnAmt)
+		if err != nil {
+			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_FAIL,
+				common.FIELD_PROC_MSG: err.Error()}
+			r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+
+			repayResp.ErrCode = common.ERR_CODE_PAYERR
+			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
+			common.Write_Response(repayResp, w, req)
+			return
+		} else {
+			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_DOING,
+				common.FIELD_PREPAY_ID: prePayId,
+				common.FIELD_CODE_URL:  codeUrl}
+
+			r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+		}
 	}
 	repayResp.ErrCode = common.ERR_CODE_SUCCESS
 	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
