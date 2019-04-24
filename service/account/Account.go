@@ -6,8 +6,6 @@ import (
 	"log"
 	"strings"
 	"time"
-
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 const (

@@ -128,6 +128,7 @@ type LogoutResp struct {
 	系统登录
 */
 func SignIn(w http.ResponseWriter, req *http.Request) {
+	common.PrintHead("SignIn")
 	var login SigninReq
 	var loginResp SigninResp
 	err := json.NewDecoder(req.Body).Decode(&login)
@@ -174,7 +175,7 @@ func SignIn(w http.ResponseWriter, req *http.Request) {
 	loginResp.ErrCode = common.ERR_CODE_SUCCESS
 	loginResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS] + login.UserName + "登录成功！"
 	loginResp.Token = tokenStr
-
+	common.PrintTail("SignIn")
 	common.Write_Response(loginResp, w, req)
 }
 
