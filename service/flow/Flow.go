@@ -923,7 +923,7 @@ func (r FlowList) UpdateMap(keyNo string, m map[string]interface{}, tr *sql.Tx) 
 	}
 	valSlice = append(valSlice, keyNo)
 	colNames = strings.TrimRight(colNames, ",")
-	updateSql := fmt.Sprintf("Update b_flow set %s where id=?", colNames)
+	updateSql := fmt.Sprintf("Update b_flow set %s where mct_trxn_no=?", colNames)
 	if r.Level == DEBUG {
 		log.Println(SQL_UPDATE, updateSql)
 	}

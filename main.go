@@ -7,16 +7,14 @@ import (
 	"io"
 
 	"jcd/control/account"
+	"jcd/control/badloan"
 	"jcd/control/comment"
 	"jcd/control/flow"
-	"jcd/control/login"
-	"jcd/control/pwd"
-
-	"jcd/control/smscode"
-
-	"jcd/control/badloan"
-
 	"jcd/control/index"
+	"jcd/control/login"
+	"jcd/control/payutil"
+	"jcd/control/pwd"
+	"jcd/control/smscode"
 
 	"log"
 	"net/http"
@@ -47,7 +45,7 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/signout", login.SignOut)
 	http.HandleFunc("/jc/api/signup", account.SignUp)
 	http.HandleFunc("/jc/api/chgpwd", pwd.ChangePwd)
-	http.HandleFunc("/jc/api/callback", account.GetAccount)
+	http.HandleFunc("/jc/api/wxcallback", payutil.WxpayCallback)
 	http.HandleFunc("/jc/api/findloan", flow.FindLoans)
 	http.HandleFunc("/jc/api/repay", flow.RepayOrder)
 	http.HandleFunc("/jc/api/getsmscode", smscode.GetSmsCode)
@@ -63,7 +61,7 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/badpindex", index.BadPLoanList)
 	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
 
-		http_srv = &http.Server{
+	http_srv = &http.Server{
 		Addr: ":8087",
 	}
 	log.Printf("listen:")

@@ -15,6 +15,18 @@ import (
 	"github.com/mojocn/base64Captcha"
 )
 
+var (
+	WX_PAY_URL          = "https://api.mch.weixin.qq.com/pay/unifiedorder"
+	WX_PAY_CALLBACK_URL = "http://132.232.11.85:8087/jc/api/wxcallback"
+	MCT_ID              = "1452819402"
+	APP_ID              = "wx2db791be2eb77467"
+	PRODUCT_NAME        = "测试商品"
+	SERVER_IP           = "132.232.11.85"
+	MCT_KEY             = "qj837vwk83xk2902jidk93slw82ms5ka"
+	TRADE_TYPE_NATIVE   = "NATIVE"
+	TRADE_TYPE_JSAPI    = "JSAPI"
+)
+
 const ERR_CODE_SUCCESS = "0000"
 const ERR_CODE_DBERROR = "1001"
 const ERR_CODE_TOKENER = "1003"
@@ -34,19 +46,22 @@ const ERR_CODE_VERIFY = "7020"
 
 const STATUS_DISABLED = 1
 const STATUS_ENABLED = 0
+const STATUS_SUCC = "S"
+const STATUS_FAIL = "F"
 const MAX_SEARCH_TIMES = "5"
 const STATUS_INIT = "i"
 
 const FIELD_LOGIN_PASS = "login_pass"
 const FIELD_ERRORS = "errors"
-
 const FIELD_KILLS = "kills"
 const FIELD_LIKES = "likes"
 const FIELD_UPDATE_TIME = "update_time"
 const FIELD_UPDATE_USER = "update_user"
+const FIELD_PROC_STATUS = "proc_status"
+const FIELD_PROC_MSG = "proc_msg"
 
 const DEFAULT_PWD = "123456"
-
+const SUCC_MSG = "success"
 const EMPTY_STRING = ""
 
 const SMSTYPE_LOGIN = "login"

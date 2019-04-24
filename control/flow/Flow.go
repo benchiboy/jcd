@@ -8,6 +8,8 @@ import (
 	"jcd/service/disputes"
 	"jcd/service/flow"
 
+	"fmt"
+	"jcd/control/payutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -217,12 +219,16 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 		e.TrxnDate = time.Now().Format("2006-01-02 15:04:05")
 		e.TrxnNo = time.Now().UnixNano()
 		e.ProcStatus = common.STATUS_INIT
-		r.InsertEntity(e, nil)
+		if err := r.InsertEntity(e, nil); err != nil {
+			repayResp.ErrCode = common.ERR_CODE_DBERROR
+			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
+			common.Write_Response(repayResp, w, req)
+			return
+		}
+		payutil.UnionPayOrder(fmt.Sprintf("%d", e.TrxnNo), 1)
 	}
-
 	repayResp.ErrCode = common.ERR_CODE_SUCCESS
 	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
-
 	common.Write_Response(repayResp, w, req)
 
 }
