@@ -20,7 +20,7 @@ var endpotin = oauth2.Endpoint{
 var oAuthConfig = &oauth2.Config{
 	ClientID:     "2302557195",
 	ClientSecret: "3e096effd83cd4d0553b5098159eced8",
-	RedirectURL:  "http://132.232.11.85:8087/jc/api/WeiboOauthCallback",
+	RedirectURL:  "http://132.232.11.85:8087/jc/api/weibocallback",
 	Scopes:       []string{"https://api.weibo.com/OAuth2/access_token"},
 	Endpoint:     endpotin,
 }
