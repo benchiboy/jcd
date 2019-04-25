@@ -34,6 +34,10 @@ var (
 	MCT_KEY             = "qj837vwk83xk2902jidk93slw82ms5ka"
 	TRADE_TYPE_NATIVE   = "NATIVE"
 	TRADE_TYPE_JSAPI    = "JSAPI"
+	//=================
+	WEIBO_OAUTH_CALLBACK_URL  = "http://132.232.11.85:8087/jc/api/wxcallback"
+	QQ_OAUTH_CALLBACK_URL     = "http://132.232.11.85:8087/jc/api/wxcallback"
+	WECHAT_OAUTH_CALLBACK_URL = "http://132.232.11.85:8087/jc/api/wxcallback"
 )
 
 const ERR_CODE_SUCCESS = "0000"

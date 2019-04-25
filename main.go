@@ -12,8 +12,10 @@ import (
 	"jcd/control/flow"
 	"jcd/control/index"
 	"jcd/control/login"
+	"jcd/control/oauth"
 	"jcd/control/payutil"
 	"jcd/control/pwd"
+
 	"jcd/control/smscode"
 
 	"log"
@@ -60,6 +62,10 @@ func go_WebServer() {
 
 	http.HandleFunc("/jc/api/badpindex", index.BadPLoanList)
 	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
+	http.HandleFunc("/jc/api/weibocallback", oauth.WeiboCallback)
+	http.HandleFunc("/jc/api/weibocancelcallback", oauth.WeiboCancelCallback)
+
+	http.HandleFunc("/jc/api/weibologin", oauth.WeiboLogin)
 
 	http_srv = &http.Server{
 		Addr: ":8087",
