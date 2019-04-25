@@ -70,3 +70,17 @@ func WeiboLogin(w http.ResponseWriter, r *http.Request) {
 	log.Println("Create user elapsed time:", time.Since(t1))
 	return
 }
+
+func WeiboLoginIndex(w http.ResponseWriter, r *http.Request) {
+
+	htmlIndex := `<html><body>
+<a href="/GoogleLogin">Log in with Google</a>
+</body></html>`
+	fmt.Fprintf(w, htmlIndex)
+
+}
+
+const htmlIndex = `<html><body>
+<a href="/GoogleLogin">Log in with Google</a>
+</body></html>
+`

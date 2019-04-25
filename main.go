@@ -11,6 +11,7 @@ import (
 	"jcd/control/comment"
 	"jcd/control/flow"
 	"jcd/control/index"
+
 	"jcd/control/login"
 	"jcd/control/oauth"
 	"jcd/control/payutil"
@@ -66,6 +67,7 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/weibocancelcallback", oauth.WeiboCancelCallback)
 
 	http.HandleFunc("/jc/api/weibologin", oauth.WeiboLogin)
+	http.HandleFunc("/jc/api/weiboindex", oauth.WeiboLoginIndex)
 
 	http_srv = &http.Server{
 		Addr: ":8087",
