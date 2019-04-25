@@ -13,6 +13,15 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mojocn/base64Captcha"
+
+	"github.com/boombuler/barcode"
+	"github.com/boombuler/barcode/qr"
+
+	"bytes"
+	"encoding/base64"
+	"image/png"
+	"io/ioutil"
+	"os"
 )
 
 var (
@@ -43,8 +52,8 @@ const ERR_CODE_OPERTYP = "4005"
 const ERR_CODE_EXISTED = "4040"
 const ERR_CODE_TOOBUSY = "6010"
 const ERR_CODE_VERIFY = "7020"
-
 const ERR_CODE_PAYERR = "8010"
+const ERR_CODE_QRCODE = "7060"
 
 const STATUS_DISABLED = 1
 const STATUS_ENABLED = 0
@@ -63,7 +72,7 @@ const FIELD_UPDATE_TIME = "update_time"
 const FIELD_UPDATE_USER = "update_user"
 const FIELD_PROC_STATUS = "proc_status"
 const FIELD_PROC_MSG = "proc_msg"
-const FIELD_PREPAY_ID = "prpay_id"
+const FIELD_PREPAY_ID = "prepay_id"
 const FIELD_CODE_URL = "code_url"
 
 const DEFAULT_PWD = "123456"
@@ -101,6 +110,7 @@ var (
 		ERR_CODE_TOOBUSY: "短信发送太频繁:",
 		ERR_CODE_VERIFY:  "验证码校验错误:",
 		ERR_CODE_PAYERR:  "支付交易失败:",
+		ERR_CODE_QRCODE:  "生产支付扫描失败:",
 	}
 )
 
@@ -282,4 +292,38 @@ func CheckCaptchaCode(idKey string, verifyValue string) bool {
 	verifyResult := base64Captcha.VerifyCaptcha(idKey, verifyValue)
 	PrintTail("CheckCaptchaCode")
 	return verifyResult
+}
+
+/*
+	说明：生产二维码信息
+	入参：
+	出参：参数1：返回符合条件的对象列表
+*/
+
+func CreateQrCode(prePayid string, codeUrl string) (string, error) {
+	fmt.Println(codeUrl)
+	qrCode, err := qr.Encode(prePayid, qr.M, qr.Auto)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// Scale the barcode to 200x200 pixels
+	qrCode, err = barcode.Scale(qrCode, 200, 200)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// create the output file
+	file, _ := os.Create(prePayid + ".png")
+	defer file.Close()
+	// encode the barcode as png
+	png.Encode(file, qrCode)
+	fileBuf, err := ioutil.ReadFile(prePayid + ".png")
+	if err != nil {
+		return EMPTY_STRING, err
+	}
+	b := bytes.NewBuffer(make([]byte, 0))
+	encoder := base64.NewEncoder(base64.StdEncoding, b)
+	encoder.Write(fileBuf)
+	encoder.Close()
+	os.Remove(prePayid + ".png")
+	return fmt.Sprintf("data:image/png;base64,%s", b), nil
 }

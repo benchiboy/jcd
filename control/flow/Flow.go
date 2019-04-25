@@ -52,15 +52,17 @@ type Loan struct {
    发起还款的请求
 */
 type RepayReq struct {
-	MctNo    string `json:"mct_no"`
-	LoanNo   string `json:"loan_no"`
-	RepayAmt int    `json:"repay_amt"`
+	MctNo     string `json:"mct_no"`
+	TradeType string `json:"trade_type"`
+	LoanNo    string `json:"loan_no"`
+	RepayAmt  int    `json:"repay_amt"`
 }
 
 /*
    还款的应答
 */
 type RepayResp struct {
+	QrCode  string `json:"qr_code"`
 	ErrCode string `json:"err_code"`
 	ErrMsg  string `json:"err_msg"`
 }
@@ -197,6 +199,7 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
+	var qrCode string
 	var search flow.Search
 	search.MctNo = repayReq.MctNo
 	search.MctTrxnNo = repayReq.LoanNo
@@ -226,22 +229,44 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 		}
 		prePayId, codeUrl, err := payutil.UnionPayOrder(fmt.Sprintf("%d", e.TrxnNo), e.TrxnAmt)
 		if err != nil {
+
 			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_FAIL,
 				common.FIELD_PROC_MSG: err.Error()}
-			r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+			err = r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
 
-			repayResp.ErrCode = common.ERR_CODE_PAYERR
-			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
+			if err != nil {
+				repayResp.ErrCode = common.ERR_CODE_DBERROR
+				repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
+			} else {
+				repayResp.ErrCode = common.ERR_CODE_PAYERR
+				repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
+			}
 			common.Write_Response(repayResp, w, req)
 			return
+
 		} else {
+
 			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_DOING,
 				common.FIELD_PREPAY_ID: prePayId,
 				common.FIELD_CODE_URL:  codeUrl}
-
-			r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+			err = r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+			if err != nil {
+				repayResp.ErrCode = common.ERR_CODE_PAYERR
+				repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
+				common.Write_Response(repayResp, w, req)
+				return
+			}
+			qrCode, err = common.CreateQrCode(prePayId, codeUrl)
+			if err != nil {
+				fmt.Println(err.Error())
+				repayResp.ErrCode = common.ERR_CODE_PAYERR
+				repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
+				common.Write_Response(repayResp, w, req)
+				return
+			}
 		}
 	}
+	repayResp.QrCode = qrCode
 	repayResp.ErrCode = common.ERR_CODE_SUCCESS
 	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(repayResp, w, req)

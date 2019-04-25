@@ -34,7 +34,7 @@ type Search struct {
 	ProcMsg    string  `json:"proc_msg"`
 	AccountBal float64 `json:"account_bal"`
 	CodeUrl    string  `json:"code_url"`
-	PrpayId    string  `json:"prpay_id"`
+	PrepayId   string  `json:"prepay_id"`
 	TrxnMemo   string  `json:"trxn_memo"`
 	TrxnDate   string  `json:"trxn_date"`
 	DoneDate   string  `json:"done_date"`
@@ -67,7 +67,7 @@ type Flow struct {
 	ProcMsg    string  `json:"proc_msg"`
 	AccountBal float64 `json:"account_bal"`
 	CodeUrl    string  `json:"code_url"`
-	PrpayId    string  `json:"prpay_id"`
+	PrepayId   string  `json:"prepay_id"`
 	TrxnMemo   string  `json:"trxn_memo"`
 	TrxnDate   string  `json:"trxn_date"`
 	DoneDate   string  `json:"done_date"`
@@ -169,8 +169,8 @@ func (r *FlowList) GetTotal(s Search) (int, error) {
 		where += " and code_url='" + s.CodeUrl + "'"
 	}
 
-	if s.PrpayId != "" {
-		where += " and prpay_id='" + s.PrpayId + "'"
+	if s.PrepayId != "" {
+		where += " and prepay_id='" + s.PrepayId + "'"
 	}
 
 	if s.TrxnMemo != "" {
@@ -279,8 +279,8 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += " and code_url='" + s.CodeUrl + "'"
 	}
 
-	if s.PrpayId != "" {
-		where += " and prpay_id='" + s.PrpayId + "'"
+	if s.PrepayId != "" {
+		where += " and prepay_id='" + s.PrepayId + "'"
 	}
 
 	if s.TrxnMemo != "" {
@@ -315,7 +315,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -330,7 +330,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrpayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrepayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -397,8 +397,8 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 		where += " and code_url='" + s.CodeUrl + "'"
 	}
 
-	if s.PrpayId != "" {
-		where += " and prpay_id='" + s.PrpayId + "'"
+	if s.PrepayId != "" {
+		where += " and prepay_id='" + s.PrepayId + "'"
 	}
 
 	if s.TrxnMemo != "" {
@@ -435,9 +435,9 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s", where)
+		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s", where)
 	} else {
-		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -451,7 +451,7 @@ func (r *FlowList) GetList(s Search) ([]Flow, error) {
 
 	var p Flow
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrpayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrepayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		r.Flows = append(r.Flows, p)
 	}
 	log.Println(SQL_ELAPSED, r)
@@ -515,8 +515,8 @@ func (r *FlowList) GetListExt(s Search, fList []string) ([][]pubtype.Data, error
 		where += " and code_url='" + s.CodeUrl + "'"
 	}
 
-	if s.PrpayId != "" {
-		where += " and prpay_id='" + s.PrpayId + "'"
+	if s.PrepayId != "" {
+		where += " and prepay_id='" + s.PrepayId + "'"
 	}
 
 	if s.TrxnMemo != "" {
@@ -661,8 +661,8 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 		where += " and code_url='" + s.CodeUrl + "'"
 	}
 
-	if s.PrpayId != "" {
-		where += " and prpay_id='" + s.PrpayId + "'"
+	if s.PrepayId != "" {
+		where += " and prepay_id='" + s.PrepayId + "'"
 	}
 
 	if s.TrxnMemo != "" {
@@ -693,7 +693,7 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 		where += " and version=" + fmt.Sprintf("%d", s.Version)
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -739,11 +739,11 @@ func (r *FlowList) GetExt(s Search) (map[string]string, error) {
 
 func (r FlowList) Insert(p Flow) error {
 	l := time.Now()
-	exeSql := fmt.Sprintf("Insert into  b_flow(user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prpay_id,trxn_memo,trxn_date,done_date,update_user,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	exeSql := fmt.Sprintf("Insert into  b_flow(user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,trxn_date,done_date,update_user,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if r.Level == DEBUG {
 		log.Println(SQL_INSERT, exeSql)
 	}
-	_, err := r.DB.Exec(exeSql, p.UserId, p.MctNo, p.MctTrxnNo, p.TrxnNo, p.TrxnAmt, p.TrxnType, p.ProcStatus, p.ProcMsg, p.AccountBal, p.CodeUrl, p.PrpayId, p.TrxnMemo, p.TrxnDate, p.DoneDate, p.UpdateUser, p.Version)
+	_, err := r.DB.Exec(exeSql, p.UserId, p.MctNo, p.MctTrxnNo, p.TrxnNo, p.TrxnAmt, p.TrxnType, p.ProcStatus, p.ProcMsg, p.AccountBal, p.CodeUrl, p.PrepayId, p.TrxnMemo, p.TrxnDate, p.DoneDate, p.UpdateUser, p.Version)
 	if err != nil {
 		log.Println(SQL_ERROR, err.Error())
 		return err
@@ -825,10 +825,10 @@ func (r FlowList) InsertEntity(p Flow, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.CodeUrl)
 	}
 
-	if p.PrpayId != "" {
-		colNames += "prpay_id,"
+	if p.PrepayId != "" {
+		colNames += "prepay_id,"
 		colTags += "?,"
-		valSlice = append(valSlice, p.PrpayId)
+		valSlice = append(valSlice, p.PrepayId)
 	}
 
 	if p.TrxnMemo != "" {
@@ -1026,10 +1026,10 @@ func (r FlowList) UpdataEntity(keyNo string, p Flow, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.CodeUrl)
 	}
 
-	if p.PrpayId != "" {
-		colNames += "prpay_id=?,"
+	if p.PrepayId != "" {
+		colNames += "prepay_id=?,"
 
-		valSlice = append(valSlice, p.PrpayId)
+		valSlice = append(valSlice, p.PrepayId)
 	}
 
 	if p.TrxnMemo != "" {

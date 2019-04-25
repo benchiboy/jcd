@@ -216,7 +216,8 @@ func WxpayCallback(w http.ResponseWriter, r *http.Request) {
 		resp.Return_code = "SUCCESS"
 		resp.Return_msg = "OK"
 		r := flow.New(dbcomm.GetDB(), flow.DEBUG)
-		resetMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_SUCC, common.FIELD_PROC_MSG: common.SUCC_MSG}
+		resetMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_SUCC,
+			common.FIELD_PROC_MSG: common.SUCC_MSG}
 		r.UpdateMap(mr.Out_trade_no, resetMap, nil)
 
 	} else {
