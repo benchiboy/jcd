@@ -26,7 +26,7 @@ import (
 
 var (
 	WX_PAY_URL          = "https://api.mch.weixin.qq.com/pay/unifiedorder"
-	WX_PAY_CALLBACK_URL = "http://132.232.11.85:8087/jc/api/wxcallback"
+	WX_PAY_CALLBACK_URL = "http://www.doulaikan.club/jc/api/wxpaycallback"
 	MCT_ID              = "1452819402"
 	APP_ID              = "wx2db791be2eb77467"
 	PRODUCT_NAME        = "测试商品"
@@ -35,9 +35,9 @@ var (
 	TRADE_TYPE_NATIVE   = "NATIVE"
 	TRADE_TYPE_JSAPI    = "JSAPI"
 	//=================
-	WEIBO_OAUTH_CALLBACK_URL  = "http://132.232.11.85:8087/jc/api/wxcallback"
-	QQ_OAUTH_CALLBACK_URL     = "http://132.232.11.85:8087/jc/api/wxcallback"
-	WECHAT_OAUTH_CALLBACK_URL = "http://132.232.11.85:8087/jc/api/wxcallback"
+	WEIBO_OAUTH_CALLBACK_URL  = "http://www.doulaikan.club/jc/api/wxcallback"
+	QQ_OAUTH_CALLBACK_URL     = "http://www.doulaikan.club/jc/api/wxcallback"
+	WECHAT_OAUTH_CALLBACK_URL = "http://www.doulaikan.club/jc/api/wxcallback"
 )
 
 const ERR_CODE_SUCCESS = "0000"

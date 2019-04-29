@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,17 @@ import (
 	"strings"
 	"time"
 )
+
+//首先定义一个UnifyOrderReq用于填入我们要传入的参数。
+type GetOrderReq struct {
+	Trxn_no int64 `xml:"trxn_no"`
+}
+
+type GetOrderResp struct {
+	ErrCode string `json:"err_code"`
+	ErrMsg  string `json:"err_msg"`
+	Status  string `xml:"status"`
+}
 
 //首先定义一个UnifyOrderReq用于填入我们要传入的参数。
 type UnifyOrderReq struct {
@@ -101,6 +113,30 @@ func wxpayCalcSign(mReq map[string]interface{}, key string) (sign string) {
 */
 func GetOrderStatus(w http.ResponseWriter, r *http.Request) {
 	common.PrintHead("GetOrderStatus")
+	var orderReq GetOrderReq
+	var orderResp GetOrderResp
+	err := json.NewDecoder(r.Body).Decode(&orderReq)
+	if err != nil {
+		orderResp.ErrCode = common.ERR_CODE_JSONERR
+		orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_JSONERR] + "请求报文格式有误！" + err.Error()
+		common.Write_Response(orderResp, w, r)
+		return
+	}
+	defer r.Body.Close()
+	var search flow.Search
+	search.TrxnNo = orderReq.Trxn_no
+	fw := flow.New(dbcomm.GetDB(), flow.DEBUG)
+	e, err := fw.Get(search)
+	if err != nil {
+		orderResp.ErrCode = common.ERR_CODE_DBERROR
+		orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
+		common.Write_Response(orderResp, w, r)
+		return
+	}
+	orderResp.ErrCode = common.ERR_CODE_SUCCESS
+	orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+	orderResp.Status = e.ProcStatus
+	common.Write_Response(orderResp, w, r)
 
 	common.PrintTail("GetOrderStatus")
 }
