@@ -77,15 +77,15 @@ func WxLogin(w http.ResponseWriter, req *http.Request) {
 */
 func regUser(openId string, unionId string, sessionKey string) (string, error) {
 	var search account.Search
-	search.WxOpenId = openId
+	search.PuserId = openId
 	r := account.New(dbcomm.GetDB(), account.DEBUG)
 	var userId string
 	if e, err := r.Get(search); err != nil {
 		var a account.Account
-		a.WxOpenId = openId
-		a.WxUnionId = unionId
+		a.PuserId = openId
+		a.PunionId = unionId
 		a.UserId = time.Now().Unix()
-		a.WxSessionKey = sessionKey
+		a.PsessionKey = sessionKey
 		a.CreatedTime = time.Now().Format("2006-01-02 15:04:05")
 		r.InsertEntity(a, nil)
 		userId = fmt.Sprintf("%d", a.UserId)

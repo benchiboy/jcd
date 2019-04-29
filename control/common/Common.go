@@ -59,6 +59,13 @@ const ERR_CODE_VERIFY = "7020"
 const ERR_CODE_PAYERR = "8010"
 const ERR_CODE_QRCODE = "7060"
 
+const ERR_USER_MSTSIGNUP = "7901"
+const ERR_USER_SIGNINED = "7902"
+const ERR_USER_UNSIGNIN = "7903"
+
+const LOGIN_PHONE = 1
+const LOGIN_OAUTH = 2
+
 const STATUS_DISABLED = 1
 const STATUS_ENABLED = 0
 const STATUS_SUCC = "S"
@@ -96,25 +103,34 @@ const COMMENT_LIKE = 10
 const COMMENT_KILL = 20
 const COMMENT_REPLY = 30
 
+const REGION_PROVINCE = 1
+const REGION_CITY = 2
+const REGION_COUNTY = 3
+const REGION_TOWN = 4
+const REGION_VILLAGE = 5
+
 var (
 	ERROR_MAP map[string]string = map[string]string{
-		ERR_CODE_SUCCESS: "执行成功:",
-		ERR_CODE_DBERROR: "DB执行错误:",
-		ERR_CODE_JSONERR: "JSON格式错误:",
-		ERR_CODE_EXPIRED: "时效已经到期:",
-		ERR_CODE_TYPEERR: "类型转换错误:",
-		ERR_CODE_STATUS:  "状态不正确:",
-		ERR_CODE_TOKENER: "获取TOKEN失败:",
-		ERR_CODE_PARTOEN: "解析TOKEN错误:",
-		ERR_CODE_NOMATCH: "比较不匹配:",
-		ERR_CODE_URLERR:  "Url传参有误:",
-		ERR_CODE_OPERTYP: "ShowType类型错误:",
-		ERR_CODE_NOTFIND: "查询没发现提示:",
-		ERR_CODE_EXISTED: "注册账户已经存在:",
-		ERR_CODE_TOOBUSY: "短信发送太频繁:",
-		ERR_CODE_VERIFY:  "验证码校验错误:",
-		ERR_CODE_PAYERR:  "支付交易失败:",
-		ERR_CODE_QRCODE:  "生产支付扫描失败:",
+		ERR_CODE_SUCCESS:   "执行成功:",
+		ERR_CODE_DBERROR:   "DB执行错误:",
+		ERR_CODE_JSONERR:   "JSON格式错误:",
+		ERR_CODE_EXPIRED:   "时效已经到期:",
+		ERR_CODE_TYPEERR:   "类型转换错误:",
+		ERR_CODE_STATUS:    "状态不正确:",
+		ERR_CODE_TOKENER:   "获取TOKEN失败:",
+		ERR_CODE_PARTOEN:   "解析TOKEN错误:",
+		ERR_CODE_NOMATCH:   "比较不匹配:",
+		ERR_CODE_URLERR:    "Url传参有误:",
+		ERR_CODE_OPERTYP:   "ShowType类型错误:",
+		ERR_CODE_NOTFIND:   "查询没发现提示:",
+		ERR_CODE_EXISTED:   "注册账户已经存在:",
+		ERR_CODE_TOOBUSY:   "短信发送太频繁:",
+		ERR_CODE_VERIFY:    "验证码校验错误:",
+		ERR_CODE_PAYERR:    "支付交易失败:",
+		ERR_CODE_QRCODE:    "生产支付扫描失败:",
+		ERR_USER_MSTSIGNUP: "用户没注册，需要注册",
+		ERR_USER_SIGNINED:  "用户已经登录",
+		ERR_USER_UNSIGNIN:  "用户需要登录",
 	}
 )
 

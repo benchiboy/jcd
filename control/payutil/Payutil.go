@@ -96,6 +96,15 @@ func wxpayCalcSign(mReq map[string]interface{}, key string) (sign string) {
 	return upperSign
 }
 
+/*
+	得到支付订单的状态
+*/
+func GetOrderStatus(w http.ResponseWriter, r *http.Request) {
+	common.PrintHead("GetOrderStatus")
+
+	common.PrintTail("GetOrderStatus")
+}
+
 func UnionPayOrder(mctTrxnNo string, totalFee int) (string, string, error) {
 	var orderReq UnifyOrderReq
 	orderReq.Appid = common.APP_ID

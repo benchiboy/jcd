@@ -41,20 +41,31 @@ var (
 func go_WebServer() {
 	log.Println("Listen Service start...")
 
+	//账号相关
+	http.HandleFunc("/jc/api/weibocallback", oauth.WeiboCallback)
+	http.HandleFunc("/jc/api/weibocancelcallback", oauth.WeiboCancelCallback)
+	http.HandleFunc("/jc/api/weibologin", oauth.WeiboLogin)
+	http.HandleFunc("/jc/api/weiboindex", oauth.WeiboLoginIndex)
 	http.HandleFunc("/wxLogin", login.WxLogin)
+	http.HandleFunc("/jc/api/wxlogin", oauth.WeiboLogin)
+	http.HandleFunc("/jc/api/wxloginindex", oauth.WeiboLoginIndex)
 
+	http.HandleFunc("/jc/api/getaccount", account.GetAccount)
 	http.HandleFunc("/jc/api/disputes", flow.Disputes)
 	http.HandleFunc("/jc/api/signin", login.SignIn)
 	http.HandleFunc("/jc/api/signout", login.SignOut)
 	http.HandleFunc("/jc/api/signup", account.SignUp)
 	http.HandleFunc("/jc/api/chgpwd", pwd.ChangePwd)
-	http.HandleFunc("/jc/api/wxcallback", payutil.WxpayCallback)
+	//支付相关
+	http.HandleFunc("/jc/api/wxpaycallback", payutil.WxpayCallback)
 	http.HandleFunc("/jc/api/findloan", flow.FindLoans)
 	http.HandleFunc("/jc/api/repay", flow.RepayOrder)
+	http.HandleFunc("/jc/api/getpaystatus", payutil.GetOrderStatus)
+	//验证码相关
 	http.HandleFunc("/jc/api/getsmscode", smscode.GetSmsCode)
 	http.HandleFunc("/jc/api/checksmscode", smscode.CheckSmsCode)
 	http.HandleFunc("/jc/api/getcaptcha", smscode.GetCaptchas)
-
+	//评论相关
 	http.HandleFunc("/jc/api/commlist", comment.CommentList)
 	http.HandleFunc("/jc/api/postcomm", comment.CommentPost)
 	http.HandleFunc("/jc/api/likecomm", comment.CommentLike)
@@ -63,11 +74,8 @@ func go_WebServer() {
 
 	http.HandleFunc("/jc/api/badpindex", index.BadPLoanList)
 	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
-	http.HandleFunc("/jc/api/weibocallback", oauth.WeiboCallback)
-	http.HandleFunc("/jc/api/weibocancelcallback", oauth.WeiboCancelCallback)
 
-	http.HandleFunc("/jc/api/weibologin", oauth.WeiboLogin)
-	http.HandleFunc("/jc/api/weiboindex", oauth.WeiboLoginIndex)
+	http.HandleFunc("/jc/api/home", oauth.Home)
 
 	http_srv = &http.Server{
 		Addr: ":8087",

@@ -3,6 +3,7 @@ package account
 import (
 	"database/sql"
 	"fmt"
+	"hcd-gate/service/pubtype"
 	"log"
 	"strings"
 	"time"
@@ -22,25 +23,27 @@ const (
 )
 
 type Search struct {
-	Id            int64  `json:"id"`
-	UserId        int64  `json:"user_id"`
-	WxOpenId      string `json:"wx_open_id"`
-	WxUnionId     string `json:"wx_union_id"`
-	WxSessionKey  string `json:"wx_session_key"`
-	LoginMode     int64  `json:"login_mode"`
-	LoginName     string `json:"login_name"`
-	LoginPass     string `json:"login_pass"`
-	Status        int64  `json:"status"`
-	AvatarUrl     string `json:"avatar_url"`
-	NickName      string `json:"nick_name"`
-	Gender        int64  `json:"gender"`
-	City          string `json:"city"`
-	Province      string `json:"province"`
-	Country       string `json:"country"`
-	Language      string `json:"language"`
-	EncryptedData string `json:"encryptedData"`
-	Iv            string `json:"iv"`
-
+	Id          int64   `json:"id"`
+	UserId      int64   `json:"user_id"`
+	PuserId     string  `json:"puser_id"`
+	PunionId    string  `json:"punion_id"`
+	PsessionKey string  `json:"psession_key"`
+	AccessToken string  `json:"access_token"`
+	ExpiresIn   int64   `json:"expires_in"`
+	JwtToken    string  `json:"jwt_token"`
+	LoginMode   int64   `json:"login_mode"`
+	LoginName   string  `json:"login_name"`
+	LoginPass   string  `json:"login_pass"`
+	Status      int64   `json:"status"`
+	AvatarUrl   string  `json:"avatar_url"`
+	NickName    string  `json:"nick_name"`
+	Mail        string  `json:"mail"`
+	Gender      int     `json:"gender"`
+	Phone       string  `json:"phone"`
+	City        string  `json:"city"`
+	Province    string  `json:"province"`
+	Country     string  `json:"country"`
+	Language    string  `json:"language"`
 	Errors      int64   `json:"errors"`
 	AccountBal  float64 `json:"account_bal"`
 	Market      string  `json:"market"`
@@ -65,22 +68,25 @@ type AccountList struct {
 type Account struct {
 	Id            int64   `json:"id"`
 	UserId        int64   `json:"user_id"`
-	WxOpenId      string  `json:"wx_open_id"`
-	WxUnionId     string  `json:"wx_union_id"`
-	WxSessionKey  string  `json:"wx_session_key"`
+	PuserId       string  `json:"puser_id"`
+	PunionId      string  `json:"punion_id"`
+	PsessionKey   string  `json:"psession_key"`
+	AccessToken   string  `json:"access_token"`
+	ExpiresIn     int64   `json:"expires_in"`
+	JwtToken      string  `json:"jwt_token"`
 	LoginMode     int64   `json:"login_mode"`
 	LoginName     string  `json:"login_name"`
 	LoginPass     string  `json:"login_pass"`
 	Status        int64   `json:"status"`
 	AvatarUrl     string  `json:"avatar_url"`
 	NickName      string  `json:"nick_name"`
+	Mail          string  `json:"mail"`
 	Gender        int     `json:"gender"`
+	Phone         string  `json:"phone"`
 	City          string  `json:"city"`
 	Province      string  `json:"province"`
 	Country       string  `json:"country"`
 	Language      string  `json:"language"`
-	EncryptedData string  `json:"encryptedData"`
-	Iv            string  `json:"iv"`
 	Errors        int64   `json:"errors"`
 	AccountBal    float64 `json:"account_bal"`
 	Market        string  `json:"market"`
@@ -89,6 +95,8 @@ type Account struct {
 	UpdatedTime   string  `json:"updated_time"`
 	Memo          string  `json:"memo"`
 	Version       int64   `json:"version"`
+	EncryptedData string  `json:"EncryptedData"`
+	Iv            string  `json:"Iv"`
 }
 
 type Form struct {
@@ -147,16 +155,28 @@ func (r *AccountList) GetTotal(s Search) (int, error) {
 		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
 	}
 
-	if s.WxOpenId != "" {
-		where += " and wx_open_id='" + s.WxOpenId + "'"
+	if s.PuserId != "" {
+		where += " and puser_id='" + s.PuserId + "'"
 	}
 
-	if s.WxUnionId != "" {
-		where += " and wx_union_id='" + s.WxUnionId + "'"
+	if s.PunionId != "" {
+		where += " and punion_id='" + s.PunionId + "'"
 	}
 
-	if s.WxSessionKey != "" {
-		where += " and wx_session_key='" + s.WxSessionKey + "'"
+	if s.PsessionKey != "" {
+		where += " and psession_key='" + s.PsessionKey + "'"
+	}
+
+	if s.AccessToken != "" {
+		where += " and access_token='" + s.AccessToken + "'"
+	}
+
+	if s.ExpiresIn != 0 {
+		where += " and expires_in=" + fmt.Sprintf("%d", s.ExpiresIn)
+	}
+
+	if s.JwtToken != "" {
+		where += " and jwt_token='" + s.JwtToken + "'"
 	}
 
 	if s.LoginMode != 0 {
@@ -183,8 +203,16 @@ func (r *AccountList) GetTotal(s Search) (int, error) {
 		where += " and nick_name='" + s.NickName + "'"
 	}
 
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
+	}
+
 	if s.Gender != 0 {
 		where += " and gender=" + fmt.Sprintf("%d", s.Gender)
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
 	}
 
 	if s.City != "" {
@@ -277,16 +305,28 @@ func (r AccountList) Get(s Search) (*Account, error) {
 		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
 	}
 
-	if s.WxOpenId != "" {
-		where += " and wx_open_id='" + s.WxOpenId + "'"
+	if s.PuserId != "" {
+		where += " and puser_id='" + s.PuserId + "'"
 	}
 
-	if s.WxUnionId != "" {
-		where += " and wx_union_id='" + s.WxUnionId + "'"
+	if s.PunionId != "" {
+		where += " and punion_id='" + s.PunionId + "'"
 	}
 
-	if s.WxSessionKey != "" {
-		where += " and wx_session_key='" + s.WxSessionKey + "'"
+	if s.PsessionKey != "" {
+		where += " and psession_key='" + s.PsessionKey + "'"
+	}
+
+	if s.AccessToken != "" {
+		where += " and access_token='" + s.AccessToken + "'"
+	}
+
+	if s.ExpiresIn != 0 {
+		where += " and expires_in=" + fmt.Sprintf("%d", s.ExpiresIn)
+	}
+
+	if s.JwtToken != "" {
+		where += " and jwt_token='" + s.JwtToken + "'"
 	}
 
 	if s.LoginMode != 0 {
@@ -313,8 +353,16 @@ func (r AccountList) Get(s Search) (*Account, error) {
 		where += " and nick_name='" + s.NickName + "'"
 	}
 
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
+	}
+
 	if s.Gender != 0 {
 		where += " and gender=" + fmt.Sprintf("%d", s.Gender)
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
 	}
 
 	if s.City != "" {
@@ -369,7 +417,7 @@ func (r AccountList) Get(s Search) (*Account, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,wx_open_id,wx_union_id,wx_session_key,login_mode,login_name,login_pass,status,avatar_url,nick_name,gender,city,province,country,language,errors,account_bal,market,random_no,memo,version from b_account where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,memo,version from b_account where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -384,7 +432,7 @@ func (r AccountList) Get(s Search) (*Account, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.WxOpenId, &p.WxUnionId, &p.WxSessionKey, &p.LoginMode, &p.LoginName, &p.LoginPass, &p.Status, &p.AvatarUrl, &p.NickName, &p.Gender, &p.City, &p.Province, &p.Country, &p.Language, &p.Errors, &p.AccountBal, &p.Market, &p.RandomNo, &p.Memo, &p.Version)
+		err := rows.Scan(&p.Id, &p.UserId, &p.PuserId, &p.PunionId, &p.PsessionKey, &p.AccessToken, &p.ExpiresIn, &p.JwtToken, &p.LoginMode, &p.LoginName, &p.LoginPass, &p.Status, &p.AvatarUrl, &p.NickName, &p.Mail, &p.Gender, &p.Phone, &p.City, &p.Province, &p.Country, &p.Language, &p.Errors, &p.AccountBal, &p.Market, &p.RandomNo, &p.Memo, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -415,16 +463,28 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
 	}
 
-	if s.WxOpenId != "" {
-		where += " and wx_open_id='" + s.WxOpenId + "'"
+	if s.PuserId != "" {
+		where += " and puser_id='" + s.PuserId + "'"
 	}
 
-	if s.WxUnionId != "" {
-		where += " and wx_union_id='" + s.WxUnionId + "'"
+	if s.PunionId != "" {
+		where += " and punion_id='" + s.PunionId + "'"
 	}
 
-	if s.WxSessionKey != "" {
-		where += " and wx_session_key='" + s.WxSessionKey + "'"
+	if s.PsessionKey != "" {
+		where += " and psession_key='" + s.PsessionKey + "'"
+	}
+
+	if s.AccessToken != "" {
+		where += " and access_token='" + s.AccessToken + "'"
+	}
+
+	if s.ExpiresIn != 0 {
+		where += " and expires_in=" + fmt.Sprintf("%d", s.ExpiresIn)
+	}
+
+	if s.JwtToken != "" {
+		where += " and jwt_token='" + s.JwtToken + "'"
 	}
 
 	if s.LoginMode != 0 {
@@ -451,8 +511,16 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 		where += " and nick_name='" + s.NickName + "'"
 	}
 
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
+	}
+
 	if s.Gender != 0 {
 		where += " and gender=" + fmt.Sprintf("%d", s.Gender)
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
 	}
 
 	if s.City != "" {
@@ -509,9 +577,9 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select id,user_id,wx_open_id,wx_union_id,wx_session_key,login_mode,login_name,login_pass,status,avatar_url,nick_name,gender,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version from b_account where 1=1 %s", where)
+		qrySql = fmt.Sprintf("Select id,user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version from b_account where 1=1 %s", where)
 	} else {
-		qrySql = fmt.Sprintf("Select id,user_id,wx_open_id,wx_union_id,wx_session_key,login_mode,login_name,login_pass,status,avatar_url,nick_name,gender,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version from b_account where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select id,user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version from b_account where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -525,7 +593,7 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 
 	var p Account
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.WxOpenId, &p.WxUnionId, &p.WxSessionKey, &p.LoginMode, &p.LoginName, &p.LoginPass, &p.Status, &p.AvatarUrl, &p.NickName, &p.Gender, &p.City, &p.Province, &p.Country, &p.Language, &p.Errors, &p.AccountBal, &p.Market, &p.RandomNo, &p.CreatedTime, &p.UpdatedTime, &p.Memo, &p.Version)
+		rows.Scan(&p.Id, &p.UserId, &p.PuserId, &p.PunionId, &p.PsessionKey, &p.AccessToken, &p.ExpiresIn, &p.JwtToken, &p.LoginMode, &p.LoginName, &p.LoginPass, &p.Status, &p.AvatarUrl, &p.NickName, &p.Mail, &p.Gender, &p.Phone, &p.City, &p.Province, &p.Country, &p.Language, &p.Errors, &p.AccountBal, &p.Market, &p.RandomNo, &p.CreatedTime, &p.UpdatedTime, &p.Memo, &p.Version)
 		r.Accounts = append(r.Accounts, p)
 	}
 	log.Println(SQL_ELAPSED, r)
@@ -536,12 +604,12 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 }
 
 /*
-	说明：根据主键查询符合条件的记录，并保持成MAP
+	说明：根据条件查询复核条件对象列表，支持分页查询
 	入参：s: 查询条件
-	出参：参数1：返回符合条件的对象, 参数2：如果错误返回错误对象
+	出参：参数1：返回符合条件的对象列表, 参数2：如果错误返回错误对象
 */
 
-func (r *AccountList) GetExt(s Search) (map[string]string, error) {
+func (r *AccountList) GetListExt(s Search, fList []string) ([][]pubtype.Data, error) {
 	var where string
 	l := time.Now()
 
@@ -553,16 +621,28 @@ func (r *AccountList) GetExt(s Search) (map[string]string, error) {
 		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
 	}
 
-	if s.WxOpenId != "" {
-		where += " and wx_open_id='" + s.WxOpenId + "'"
+	if s.PuserId != "" {
+		where += " and puser_id='" + s.PuserId + "'"
 	}
 
-	if s.WxUnionId != "" {
-		where += " and wx_union_id='" + s.WxUnionId + "'"
+	if s.PunionId != "" {
+		where += " and punion_id='" + s.PunionId + "'"
 	}
 
-	if s.WxSessionKey != "" {
-		where += " and wx_session_key='" + s.WxSessionKey + "'"
+	if s.PsessionKey != "" {
+		where += " and psession_key='" + s.PsessionKey + "'"
+	}
+
+	if s.AccessToken != "" {
+		where += " and access_token='" + s.AccessToken + "'"
+	}
+
+	if s.ExpiresIn != 0 {
+		where += " and expires_in=" + fmt.Sprintf("%d", s.ExpiresIn)
+	}
+
+	if s.JwtToken != "" {
+		where += " and jwt_token='" + s.JwtToken + "'"
 	}
 
 	if s.LoginMode != 0 {
@@ -589,8 +669,16 @@ func (r *AccountList) GetExt(s Search) (map[string]string, error) {
 		where += " and nick_name='" + s.NickName + "'"
 	}
 
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
+	}
+
 	if s.Gender != 0 {
 		where += " and gender=" + fmt.Sprintf("%d", s.Gender)
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
 	}
 
 	if s.City != "" {
@@ -641,7 +729,193 @@ func (r *AccountList) GetExt(s Search) (map[string]string, error) {
 		where += " and version=" + fmt.Sprintf("%d", s.Version)
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,wx_open_id,wx_union_id,wx_session_key,login_mode,login_name,login_pass,status,avatar_url,nick_name,gender,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version from b_account where 1=1 %s ", where)
+	if s.ExtraWhere != "" {
+		where += s.ExtraWhere
+	}
+
+	colNames := ""
+	for _, v := range fList {
+		colNames += v + ","
+
+	}
+	colNames = strings.TrimRight(colNames, ",")
+
+	var qrySql string
+	if s.PageSize == 0 && s.PageNo == 0 {
+		qrySql = fmt.Sprintf("Select %s from b_account where 1=1 %s", colNames, where)
+	} else {
+		qrySql = fmt.Sprintf("Select %s from b_account where 1=1 %s Limit %d offset %d", colNames, where, s.PageSize, (s.PageNo-1)*s.PageSize)
+	}
+	if r.Level == DEBUG {
+		log.Println(SQL_SELECT, qrySql)
+	}
+	rows, err := r.DB.Query(qrySql)
+	if err != nil {
+		log.Println(SQL_ERROR, err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	Columns, _ := rows.Columns()
+	values := make([]sql.RawBytes, len(Columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+
+	rowData := make([][]pubtype.Data, 0)
+	for rows.Next() {
+		err = rows.Scan(scanArgs...)
+		colData := make([]pubtype.Data, 0)
+		for k, _ := range values {
+			d := new(pubtype.Data)
+			d.FieldName = Columns[k]
+			d.FieldValue = string(values[k])
+			colData = append(colData, *d)
+		}
+		//extra flow_batch_id
+		d2 := new(pubtype.Data)
+		d2.FieldName = "flow_batch_id"
+		d2.FieldValue = string(values[0])
+		colData = append(colData, *d2)
+
+		rowData = append(rowData, colData)
+	}
+
+	log.Println(SQL_ELAPSED, "==========>>>>>>>>>>>", rowData)
+	if r.Level == DEBUG {
+		log.Println(SQL_ELAPSED, time.Since(l))
+	}
+	return rowData, nil
+}
+
+/*
+	说明：根据主键查询符合条件的记录，并保持成MAP
+	入参：s: 查询条件
+	出参：参数1：返回符合条件的对象, 参数2：如果错误返回错误对象
+*/
+
+func (r *AccountList) GetExt(s Search) (map[string]string, error) {
+	var where string
+	l := time.Now()
+
+	if s.Id != 0 {
+		where += " and id=" + fmt.Sprintf("%d", s.Id)
+	}
+
+	if s.UserId != 0 {
+		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
+	}
+
+	if s.PuserId != "" {
+		where += " and puser_id='" + s.PuserId + "'"
+	}
+
+	if s.PunionId != "" {
+		where += " and punion_id='" + s.PunionId + "'"
+	}
+
+	if s.PsessionKey != "" {
+		where += " and psession_key='" + s.PsessionKey + "'"
+	}
+
+	if s.AccessToken != "" {
+		where += " and access_token='" + s.AccessToken + "'"
+	}
+
+	if s.ExpiresIn != 0 {
+		where += " and expires_in=" + fmt.Sprintf("%d", s.ExpiresIn)
+	}
+
+	if s.JwtToken != "" {
+		where += " and jwt_token='" + s.JwtToken + "'"
+	}
+
+	if s.LoginMode != 0 {
+		where += " and login_mode=" + fmt.Sprintf("%d", s.LoginMode)
+	}
+
+	if s.LoginName != "" {
+		where += " and login_name='" + s.LoginName + "'"
+	}
+
+	if s.LoginPass != "" {
+		where += " and login_pass='" + s.LoginPass + "'"
+	}
+
+	if s.Status != 0 {
+		where += " and status=" + fmt.Sprintf("%d", s.Status)
+	}
+
+	if s.AvatarUrl != "" {
+		where += " and avatar_url='" + s.AvatarUrl + "'"
+	}
+
+	if s.NickName != "" {
+		where += " and nick_name='" + s.NickName + "'"
+	}
+
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
+	}
+
+	if s.Gender != 0 {
+		where += " and gender=" + fmt.Sprintf("%d", s.Gender)
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
+	}
+
+	if s.City != "" {
+		where += " and city='" + s.City + "'"
+	}
+
+	if s.Province != "" {
+		where += " and province='" + s.Province + "'"
+	}
+
+	if s.Country != "" {
+		where += " and country='" + s.Country + "'"
+	}
+
+	if s.Language != "" {
+		where += " and language='" + s.Language + "'"
+	}
+
+	if s.Errors != 0 {
+		where += " and errors=" + fmt.Sprintf("%d", s.Errors)
+	}
+
+	if s.AccountBal != 0 {
+		where += " and account_bal=" + fmt.Sprintf("%f", s.AccountBal)
+	}
+
+	if s.Market != "" {
+		where += " and market='" + s.Market + "'"
+	}
+
+	if s.RandomNo != 0 {
+		where += " and random_no=" + fmt.Sprintf("%d", s.RandomNo)
+	}
+
+	if s.CreatedTime != "" {
+		where += " and created_time='" + s.CreatedTime + "'"
+	}
+
+	if s.UpdatedTime != "" {
+		where += " and updated_time='" + s.UpdatedTime + "'"
+	}
+
+	if s.Memo != "" {
+		where += " and memo='" + s.Memo + "'"
+	}
+
+	if s.Version != 0 {
+		where += " and version=" + fmt.Sprintf("%d", s.Version)
+	}
+
+	qrySql := fmt.Sprintf("Select id,user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version from b_account where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -687,11 +961,11 @@ func (r *AccountList) GetExt(s Search) (map[string]string, error) {
 
 func (r AccountList) Insert(p Account) error {
 	l := time.Now()
-	exeSql := fmt.Sprintf("Insert into  b_account(user_id,wx_open_id,wx_union_id,wx_session_key,login_mode,login_name,login_pass,status,avatar_url,nick_name,gender,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	exeSql := fmt.Sprintf("Insert into  b_account(user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,created_time,updated_time,memo,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if r.Level == DEBUG {
 		log.Println(SQL_INSERT, exeSql)
 	}
-	_, err := r.DB.Exec(exeSql, p.UserId, p.WxOpenId, p.WxUnionId, p.WxSessionKey, p.LoginMode, p.LoginName, p.LoginPass, p.Status, p.AvatarUrl, p.NickName, p.Gender, p.City, p.Province, p.Country, p.Language, p.Errors, p.AccountBal, p.Market, p.RandomNo, p.CreatedTime, p.UpdatedTime, p.Memo, p.Version)
+	_, err := r.DB.Exec(exeSql, p.UserId, p.PuserId, p.PunionId, p.PsessionKey, p.AccessToken, p.ExpiresIn, p.JwtToken, p.LoginMode, p.LoginName, p.LoginPass, p.Status, p.AvatarUrl, p.NickName, p.Mail, p.Gender, p.Phone, p.City, p.Province, p.Country, p.Language, p.Errors, p.AccountBal, p.Market, p.RandomNo, p.CreatedTime, p.UpdatedTime, p.Memo, p.Version)
 	if err != nil {
 		log.Println(SQL_ERROR, err.Error())
 		return err
@@ -719,22 +993,40 @@ func (r AccountList) InsertEntity(p Account, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.UserId)
 	}
 
-	if p.WxOpenId != "" {
-		colNames += "wx_open_id,"
+	if p.PuserId != "" {
+		colNames += "puser_id,"
 		colTags += "?,"
-		valSlice = append(valSlice, p.WxOpenId)
+		valSlice = append(valSlice, p.PuserId)
 	}
 
-	if p.WxUnionId != "" {
-		colNames += "wx_union_id,"
+	if p.PunionId != "" {
+		colNames += "punion_id,"
 		colTags += "?,"
-		valSlice = append(valSlice, p.WxUnionId)
+		valSlice = append(valSlice, p.PunionId)
 	}
 
-	if p.WxSessionKey != "" {
-		colNames += "wx_session_key,"
+	if p.PsessionKey != "" {
+		colNames += "psession_key,"
 		colTags += "?,"
-		valSlice = append(valSlice, p.WxSessionKey)
+		valSlice = append(valSlice, p.PsessionKey)
+	}
+
+	if p.AccessToken != "" {
+		colNames += "access_token,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.AccessToken)
+	}
+
+	if p.ExpiresIn != 0 {
+		colNames += "expires_in,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.ExpiresIn)
+	}
+
+	if p.JwtToken != "" {
+		colNames += "jwt_token,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.JwtToken)
 	}
 
 	if p.LoginMode != 0 {
@@ -773,10 +1065,22 @@ func (r AccountList) InsertEntity(p Account, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.NickName)
 	}
 
+	if p.Mail != "" {
+		colNames += "mail,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.Mail)
+	}
+
 	if p.Gender != 0 {
 		colNames += "gender,"
 		colTags += "?,"
 		valSlice = append(valSlice, p.Gender)
+	}
+
+	if p.Phone != "" {
+		colNames += "phone,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.Phone)
 	}
 
 	if p.City != "" {
@@ -965,22 +1269,39 @@ func (r AccountList) UpdataEntity(keyNo string, p Account, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.UserId)
 	}
 
-	if p.WxOpenId != "" {
-		colNames += "wx_open_id=?,"
+	if p.PuserId != "" {
+		colNames += "puser_id=?,"
 
-		valSlice = append(valSlice, p.WxOpenId)
+		valSlice = append(valSlice, p.PuserId)
 	}
 
-	if p.WxUnionId != "" {
-		colNames += "wx_union_id=?,"
+	if p.PunionId != "" {
+		colNames += "punion_id=?,"
 
-		valSlice = append(valSlice, p.WxUnionId)
+		valSlice = append(valSlice, p.PunionId)
 	}
 
-	if p.WxSessionKey != "" {
-		colNames += "wx_session_key=?,"
+	if p.PsessionKey != "" {
+		colNames += "psession_key=?,"
 
-		valSlice = append(valSlice, p.WxSessionKey)
+		valSlice = append(valSlice, p.PsessionKey)
+	}
+
+	if p.AccessToken != "" {
+		colNames += "access_token=?,"
+
+		valSlice = append(valSlice, p.AccessToken)
+	}
+
+	if p.ExpiresIn != 0 {
+		colNames += "expires_in=?,"
+		valSlice = append(valSlice, p.ExpiresIn)
+	}
+
+	if p.JwtToken != "" {
+		colNames += "jwt_token=?,"
+
+		valSlice = append(valSlice, p.JwtToken)
 	}
 
 	if p.LoginMode != 0 {
@@ -1017,9 +1338,21 @@ func (r AccountList) UpdataEntity(keyNo string, p Account, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.NickName)
 	}
 
+	if p.Mail != "" {
+		colNames += "mail=?,"
+
+		valSlice = append(valSlice, p.Mail)
+	}
+
 	if p.Gender != 0 {
 		colNames += "gender=?,"
 		valSlice = append(valSlice, p.Gender)
+	}
+
+	if p.Phone != "" {
+		colNames += "phone=?,"
+
+		valSlice = append(valSlice, p.Phone)
 	}
 
 	if p.City != "" {
