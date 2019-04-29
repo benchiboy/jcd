@@ -11,6 +11,7 @@ import (
 	"jcd/control/comment"
 	"jcd/control/flow"
 	"jcd/control/index"
+	"jcd/control/region"
 
 	"jcd/control/login"
 	"jcd/control/oauth"
@@ -76,6 +77,8 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
 
 	http.HandleFunc("/jc/api/home", oauth.Home)
+	//基础参数信息
+	http.HandleFunc("/jc/api/getregion", region.GetRegionList)
 
 	http_srv = &http.Server{
 		Addr: ":8087",

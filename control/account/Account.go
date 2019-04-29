@@ -36,6 +36,7 @@ type GetAccountResp struct {
 	注册请求
 */
 type SignUpReq struct {
+	NickName string `json:"nick_name"`
 	UserName string `json:"user_name"`
 	PassWord string `json:"pass_word"`
 	SmsCode  string `json:"sms_code"`
@@ -139,8 +140,11 @@ func SignUp(w http.ResponseWriter, req *http.Request) {
 
 	} else {
 		var e account.Account
+		e.LoginMode = common.LOGIN_PHONE
+		e.NickName = signupReq.NickName
 		e.LoginName = signupReq.UserName
 		e.LoginPass = signupReq.PassWord
+		e.Phone = signupReq.UserName
 		e.UserId = time.Now().Unix()
 		r.InsertEntity(e, nil)
 	}

@@ -1,6 +1,6 @@
 {
 	"config":{
-		"DB_URL": "root:123456@tcp(10.89.4.239:3306)/jucui_db",
+		"DB_URL": "root:123456@tcp(localhost:3306)/jucui_db",
 		"LISTEN":8000,
 		"OPEN_CONNS":120,
 		"IDLE_CONNS":120

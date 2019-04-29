@@ -1,13 +1,15 @@
-package pwd
+package region
 
 import (
 	"encoding/json"
 	"fmt"
 	"jcd/control/common"
 	"jcd/service/dbcomm"
-
-	//	"jcd/service/jcity"
+	"jcd/service/jcity"
+	"jcd/service/jcounty"
 	"jcd/service/jprovince"
+	"jcd/service/jtown"
+	"jcd/service/jvillage"
 	"net/http"
 	"strconv"
 )
@@ -16,8 +18,8 @@ import (
 	区域查询请求
 */
 type RegionReq struct {
-	RegionType int    `json:"region_type"`
-	ParentNo   string `json:"parent_no"`
+	RegionType int   `json:"region_type"`
+	ParentNo   int64 `json:"parent_no"`
 }
 
 /*
@@ -30,7 +32,7 @@ type RegionResp struct {
 }
 
 type Region struct {
-	RegionNo   string `json:"region_no"`
+	RegionNo   int64  `json:"region_no"`
 	RegionName string `json:"region_name"`
 }
 
@@ -75,19 +77,82 @@ func GetRegionList(w http.ResponseWriter, req *http.Request) {
 		}
 		for _, v := range l {
 			var e Region
-			e.RegionNo = fmt.Sprintf("%d", v.ProviceId)
+			e.RegionNo = v.ProviceId
 			e.RegionName = v.ProviceName
 			golist = append(golist, e)
 		}
 	case common.REGION_CITY:
+		var search city.Search
+		search.ProvinceId = regionReq.ParentNo
+		r := city.New(dbcomm.GetDB(), city.DEBUG)
+		l, err := r.GetList(search)
+		if err != nil {
+			regionResp.ErrCode = common.ERR_CODE_DBERROR
+			regionResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR] + err.Error()
+			common.Write_Response(regionResp, w, req)
+			return
+		}
+		for _, v := range l {
+			var e Region
+			e.RegionNo = v.CityId
+			e.RegionName = v.CityName
+			golist = append(golist, e)
+		}
 	case common.REGION_COUNTY:
+		var search county.Search
+		search.CityId = regionReq.ParentNo
+		r := county.New(dbcomm.GetDB(), county.DEBUG)
+		l, err := r.GetList(search)
+		if err != nil {
+			regionResp.ErrCode = common.ERR_CODE_DBERROR
+			regionResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR] + err.Error()
+			common.Write_Response(regionResp, w, req)
+			return
+		}
+		for _, v := range l {
+			var e Region
+			e.RegionNo = v.CountyId
+			e.RegionName = v.CountyName
+			golist = append(golist, e)
+		}
 	case common.REGION_TOWN:
+		var search town.Search
+		search.CountyId = regionReq.ParentNo
+		r := town.New(dbcomm.GetDB(), town.DEBUG)
+		l, err := r.GetList(search)
+		if err != nil {
+			regionResp.ErrCode = common.ERR_CODE_DBERROR
+			regionResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR] + err.Error()
+			common.Write_Response(regionResp, w, req)
+			return
+		}
+		for _, v := range l {
+			var e Region
+			e.RegionNo = v.TownId
+			e.RegionName = v.TownName
+			golist = append(golist, e)
+		}
 	case common.REGION_VILLAGE:
+		var search village.Search
+		search.TownId = regionReq.ParentNo
+		r := village.New(dbcomm.GetDB(), village.DEBUG)
+		l, err := r.GetList(search)
+		if err != nil {
+			regionResp.ErrCode = common.ERR_CODE_DBERROR
+			regionResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR] + err.Error()
+			common.Write_Response(regionResp, w, req)
+			return
+		}
+		for _, v := range l {
+			var e Region
+			e.RegionNo = v.VillageId
+			e.RegionName = v.VillageName
+			golist = append(golist, e)
+		}
 
 	}
-
 	regionResp.ErrCode = common.ERR_CODE_SUCCESS
-	regionResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS] + "修改密码成功！"
+	regionResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	regionResp.List = golist
 	common.Write_Response(regionResp, w, req)
 }
