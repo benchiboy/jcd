@@ -45,6 +45,9 @@ func go_WebServer() {
 	//账号相关
 	http.HandleFunc("/jc/api/weibocallback", oauth.WeiboCallback)
 	http.HandleFunc("/jc/api/weibocancelcallback", oauth.WeiboCancelCallback)
+	http.HandleFunc("/jc/api/alipaycallback", oauth.AlipayCallback)
+	http.HandleFunc("/jc/api/alipaylogin", oauth.AlipayLogin)
+
 	http.HandleFunc("/jc/api/weibologin", oauth.WeiboLogin)
 	http.HandleFunc("/jc/api/weiboindex", oauth.WeiboLoginIndex)
 	http.HandleFunc("/wxLogin", login.WxLogin)

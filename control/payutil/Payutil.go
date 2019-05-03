@@ -176,6 +176,7 @@ func UnionPayOrder(mctTrxnNo string, totalFee int) (string, string, error) {
 	bytes_req = []byte(str_req)
 	fmt.Println(string(bytes_req))
 	//发送unified order请求.
+
 	req, err := http.NewRequest("POST", common.WX_PAY_URL, bytes.NewReader(bytes_req))
 	if err != nil {
 		fmt.Println("New Http Request发生错误，原因:", err)
