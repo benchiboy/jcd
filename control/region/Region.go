@@ -45,7 +45,7 @@ type Region struct {
 
 func GetRegionList(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("GetRegionList")
-	userId, _, tokenErr := common.CheckToken(w, req)
+	userId, _, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}

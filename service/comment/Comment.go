@@ -24,6 +24,8 @@ const (
 type Search struct {
 	Id           int64  `json:"id"`
 	UserId       int64  `json:"user_id"`
+	AvatarUrl    string `json:"avatar_url"`
+	NickName     string `json:"nick_name"`
 	ParentCommNo int64  `json:"parent_comm_no"`
 	CommNo       int64  `json:"comm_no"`
 	Title        string `json:"title"`
@@ -51,16 +53,20 @@ type Comment struct {
 	Id           int64     `json:"id"`
 	UserId       int64     `json:"user_id"`
 	AvatarUrl    string    `json:"avatar_url"`
+	NickName     string    `json:"nick_name"`
 	ParentCommNo int64     `json:"parent_comm_no"`
 	CommNo       int64     `json:"comm_no"`
 	Title        string    `json:"title"`
 	Context      string    `json:"context"`
 	Kills        int64     `json:"kills"`
 	Likes        int64     `json:"likes"`
+	Replies      int64     `json:"replies"`
 	InsertTime   string    `json:"insert_time"`
 	UpdateTime   string    `json:"update_time"`
 	UpdateUser   string    `json:"update_user"`
 	Version      int64     `json:"version"`
+	IsShowReply  bool      `json:"is_showreply"`
+	IsEableReply bool      `json:"is_eable_reply"`
 	ReplyList    []Comment `json:"reply_list"`
 }
 
@@ -281,7 +287,7 @@ func (r *CommentList) GetList(s Search) ([]Comment, error) {
 	}
 
 	if s.UserId != 0 {
-		where += " and user_id=" + fmt.Sprintf("%d", s.UserId)
+		where += " and a.user_id=" + fmt.Sprintf("%d", s.UserId)
 	}
 
 	if s.ParentCommNo != 0 {
@@ -332,9 +338,9 @@ func (r *CommentList) GetList(s Search) ([]Comment, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select a.id,a.user_id,b.avatar_url,parent_comm_no,comm_no,title,context,kills,likes,insert_time,update_time,update_user,a.version from b_comment a ,b_account b where 1=1 %s and a.user_id=b.user_id", where)
+		qrySql = fmt.Sprintf("Select a.id,a.user_id,b.avatar_url,b.nick_name,parent_comm_no,comm_no,title,context,kills,likes,replies,insert_time,update_time,update_user,a.version from b_comment a ,b_account b where 1=1 %s and a.user_id=b.user_id order by id desc", where)
 	} else {
-		qrySql = fmt.Sprintf("Select a.id,a.user_id,b.avatar_url,parent_comm_no,comm_no,title,context,kills,likes,insert_time,update_time,update_user,a.version from b_comment a ,b_account b where 1=1 %s and a.user_id=b.user_id  Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select a.id,a.user_id,b.avatar_url,b.nick_name,parent_comm_no,comm_no,title,context,kills,likes,replies,insert_time,update_time,update_user,a.version from b_comment a ,b_account b where 1=1 %s and a.user_id=b.user_id order by id desc  Limit %d offset %d ", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -348,7 +354,7 @@ func (r *CommentList) GetList(s Search) ([]Comment, error) {
 
 	var p Comment
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.AvatarUrl, &p.ParentCommNo, &p.CommNo, &p.Title, &p.Context, &p.Kills, &p.Likes, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		rows.Scan(&p.Id, &p.UserId, &p.AvatarUrl, &p.NickName, &p.ParentCommNo, &p.CommNo, &p.Title, &p.Context, &p.Kills, &p.Likes, &p.Replies, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		r.Comments = append(r.Comments, p)
 	}
 	log.Println(SQL_ELAPSED, r)

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -38,6 +40,13 @@ var (
 	WEIBO_OAUTH_CALLBACK_URL  = "http://www.doulaikan.club/jc/api/wxcallback"
 	QQ_OAUTH_CALLBACK_URL     = "http://www.doulaikan.club/jc/api/wxcallback"
 	WECHAT_OAUTH_CALLBACK_URL = "http://www.doulaikan.club/jc/api/wxcallback"
+
+	CRF_SMSURL_UAT = "http://192.168.70.196:8080/sms_platform/receiveController/"
+	CRF_SMSURL_PRD = "http://shortmessage-uat.crfchina.com/sms_platform/receiveController/"
+
+	SMS_POST_KEY     = "f2dd8a0cf33c4f448b6dff8d13e98ae9"
+	SMS_SYS_NO       = "36"
+	SMS_SERVICE_TYPE = "crf_xiaocui_001"
 )
 
 const ERR_CODE_SUCCESS = "0000"
@@ -62,6 +71,7 @@ const ERR_CODE_QRCODE = "7060"
 const ERR_USER_MSTSIGNUP = "7901"
 const ERR_USER_SIGNINED = "7902"
 const ERR_USER_UNSIGNIN = "7903"
+const ERR_SMS_SENDERR = "9066"
 
 const LOGIN_PHONE = 1
 const LOGIN_OAUTH = 2
@@ -95,7 +105,7 @@ const SMSTYPE_RESET = "reset"
 const SMS_STATUS_INIT = "i"
 const SMS_STATUS_END = "e"
 
-const SMSCODE_EXPIRED_MINUTE = 5
+const SMSCODE_EXPIRED_MINUTE = 20
 const SMSCODE_MIN_INTERVAL = 10
 
 const COMMENT_INIT_VALUE = 0
@@ -131,6 +141,7 @@ var (
 		ERR_USER_MSTSIGNUP: "用户没注册，需要注册",
 		ERR_USER_SIGNINED:  "用户已经登录",
 		ERR_USER_UNSIGNIN:  "用户需要登录",
+		ERR_SMS_SENDERR:    "发送短信出错",
 	}
 )
 
@@ -182,7 +193,7 @@ func Write_Response(response interface{}, w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "http://10.89.4.225:8000")
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Max-Age", "1728000")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
@@ -197,13 +208,14 @@ func Write_Response(response interface{}, w http.ResponseWriter, r *http.Request
 		 参数1：Error
 */
 
-func GetToken(userId string) (string, error) {
+func GetToken(userId string, nickName string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := make(jwt.MapClaims)
 	claims["aud"] = userId
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(10)).Unix()
 	claims["iat"] = time.Now().Unix()
 	claims["cnt"] = MAX_SEARCH_TIMES
+	claims["nne"] = nickName
 
 	token.Claims = claims
 	tokenString, err := token.SignedString([]byte(TOKEN_KEY))
@@ -220,7 +232,7 @@ func GetToken(userId string) (string, error) {
 		 参数1：Error
 */
 
-func CheckToken(w http.ResponseWriter, req *http.Request) (string, string, error) {
+func CheckToken(w http.ResponseWriter, req *http.Request) (string, string, string, error) {
 	PrintHead("CheckToken")
 	var errResp ErrorResp
 	auth := req.Header.Get("Authorization")
@@ -243,25 +255,31 @@ func CheckToken(w http.ResponseWriter, req *http.Request) (string, string, error
 		}
 		errResp.ErrMsg = ERROR_MAP[ERR_CODE_PARTOEN] + err.Error()
 		Write_Response(errResp, w, req)
-		return EMPTY_STRING, EMPTY_STRING, err
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, err
 	}
 	userId, ok := claims["aud"].(string)
 	if !ok {
 		errResp.ErrCode = ERR_CODE_TYPEERR
 		errResp.ErrMsg = ERROR_MAP[ERR_CODE_TYPEERR] + "userid"
 		Write_Response(errResp, w, req)
-
-		return EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
 	}
 	maxTimes, ok := claims["cnt"].(string)
 	if !ok {
 		errResp.ErrCode = ERR_CODE_TYPEERR
 		errResp.ErrMsg = ERROR_MAP[ERR_CODE_TYPEERR] + "maxTimes"
 		Write_Response(errResp, w, req)
-		return EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
+	}
+	nickName, ok := claims["nne"].(string)
+	if !ok {
+		errResp.ErrCode = ERR_CODE_TYPEERR
+		errResp.ErrMsg = ERROR_MAP[ERR_CODE_TYPEERR] + "nickName"
+		Write_Response(errResp, w, req)
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
 	}
 
-	return userId, maxTimes, nil
+	return userId, maxTimes, nickName, nil
 }
 
 /*
@@ -271,19 +289,22 @@ func CheckToken(w http.ResponseWriter, req *http.Request) (string, string, error
 		 参数1：Error
 */
 
-func CheckSmsCode(userId int64, phone string, smsCode string) error {
+func CheckSmsCode(phoneNo string, smsCode string) error {
 	PrintHead("CheckSmsCode")
 	var search smscode.Search
-	search.Phone = phone
-	search.UserId = userId
+	search.Phone = phoneNo
 	search.Status = SMS_STATUS_INIT
 	search.SmsCode = smsCode
 	r := smscode.New(dbcomm.GetDB(), smscode.DEBUG)
 	l, _ := r.GetList(search)
 	for _, v := range l {
 		local, _ := time.LoadLocation("Local")
+		fmt.Println(v.ValidEtime)
+
 		endTime, _ := time.ParseInLocation("2006-01-02 15:04:05", v.ValidEtime, local)
+		fmt.Println(endTime)
 		if endTime.Before(time.Now()) {
+			log.Println("过期的，跳过")
 			continue
 		}
 		if v.SmsCode == smsCode {
@@ -294,6 +315,8 @@ func CheckSmsCode(userId int64, phone string, smsCode string) error {
 				return nil
 			}
 		}
+		log.Println("非法的。。。。")
+
 	}
 	PrintTail("CheckSmsCode")
 	return errors.New("短信验证码不合法")
@@ -308,9 +331,9 @@ func CheckSmsCode(userId int64, phone string, smsCode string) error {
 */
 
 func CheckCaptchaCode(idKey string, verifyValue string) bool {
-	PrintHead("CheckCaptchaCode")
+	PrintHead("CheckCaptchaCode", idKey, verifyValue)
 	verifyResult := base64Captcha.VerifyCaptcha(idKey, verifyValue)
-	PrintTail("CheckCaptchaCode")
+	PrintTail("CheckCaptchaCode", verifyResult)
 	return verifyResult
 }
 
@@ -322,7 +345,7 @@ func CheckCaptchaCode(idKey string, verifyValue string) bool {
 
 func CreateQrCode(prePayid string, codeUrl string) (string, error) {
 	fmt.Println(codeUrl)
-	qrCode, err := qr.Encode(prePayid, qr.M, qr.Auto)
+	qrCode, err := qr.Encode(codeUrl, qr.M, qr.Auto)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -338,6 +361,7 @@ func CreateQrCode(prePayid string, codeUrl string) (string, error) {
 	png.Encode(file, qrCode)
 	fileBuf, err := ioutil.ReadFile(prePayid + ".png")
 	if err != nil {
+		fmt.Println(err)
 		return EMPTY_STRING, err
 	}
 	b := bytes.NewBuffer(make([]byte, 0))
@@ -346,4 +370,77 @@ func CreateQrCode(prePayid string, codeUrl string) (string, error) {
 	encoder.Close()
 	os.Remove(prePayid + ".png")
 	return fmt.Sprintf("data:image/png;base64,%s", b), nil
+}
+
+/*
+	访问短信平台的请求
+*/
+type SmsReq struct {
+	Data        map[string]string `json:"data"`
+	MobliePhone string            `json:"mobilePhone"`
+	ServiceType string            `json:"serviceType"`
+	Sige        string            `json:"sige"`
+	Sys         string            `json:"sys"`
+}
+
+/*
+	访问短信平台的应答
+*/
+type SmsResp struct {
+	ErrMsg      string `json:"errMsg"`
+	Result      string `json:"result"`
+	ServiceType string `json:"serviceType"`
+}
+
+/*
+	说明：调用第三方短信平台
+	入参：
+	出参：参数1：Token
+		 参数1：Error
+*/
+
+func PostSmsCode(phoneNo string, smsCode string) error {
+	PrintHead("PostSmsCode")
+	var smsReq SmsReq
+	smsReq.Data = make(map[string]string, 0)
+	smsReq.MobliePhone = phoneNo
+	smsReq.ServiceType = SMS_SERVICE_TYPE
+	smsReq.Sys = SMS_SYS_NO
+	smsReq.Data["code"] = smsCode
+
+	md5Ctx := md5.New()
+	md5Ctx.Write([]byte(smsReq.Sys + smsReq.ServiceType + smsReq.MobliePhone + SMS_POST_KEY))
+	cipherStr := md5Ctx.Sum(nil)
+	upperSign := strings.ToUpper(hex.EncodeToString(cipherStr))
+	smsReq.Sige = upperSign
+	smsReqBuf, err := json.Marshal(smsReq)
+
+	req, err := http.NewRequest("POST", CRF_SMSURL_UAT, bytes.NewReader(smsReqBuf))
+	if err != nil {
+		log.Println("New Http Request发生错误，原因:", err)
+		return errors.New("网络连接出现问题,稍后再试！")
+	}
+	c := http.Client{}
+	resp, _err := c.Do(req)
+	if _err != nil {
+		log.Println("请求短信平台发送短信错误, 原因:", _err)
+		return errors.New("网络连接出现问题,稍后再试！")
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err.Error())
+		return errors.New("获取应答出现问题")
+	}
+	var smsResp SmsResp
+	err = json.Unmarshal(body, &smsResp)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Printf("短信发送结果:%#v", smsResp)
+	if smsResp.Result != "0000" {
+		return errors.New(smsResp.ErrMsg)
+	}
+	PrintTail("PostSmsCode")
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"jcd/service/dbcomm"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 /*
@@ -31,8 +32,9 @@ type ChangePwdResp struct {
 	重置密码
 */
 type ResetPwdReq struct {
-	FlowBatchId string `json:"flow_batch_id"`
-	PassWord    string `json:"password"`
+	LoginName  string `json:"login_name"`
+	VerifyCode string `json:"sms_code"`
+	PassWord   string `json:"login_pass"`
 }
 
 /*
@@ -47,7 +49,7 @@ type ResetPwdResp struct {
 	当前机构及用户ID从TOKEN获取
 */
 func ChangePwd(w http.ResponseWriter, req *http.Request) {
-	userId, _, tokenErr := common.CheckToken(w, req)
+	userId, _, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}
@@ -63,15 +65,8 @@ func ChangePwd(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	if err := common.CheckSmsCode(uId, common.EMPTY_STRING, changeReq.SmsCode); err != nil {
-		changeResp.ErrCode = common.ERR_CODE_VERIFY
-		changeResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
-		common.Write_Response(changeResp, w, req)
-		return
-	}
-
 	var search account.Search
-	search.LoginName = userId
+	search.UserId = uId
 	r := account.New(dbcomm.GetDB(), account.DEBUG)
 	p, err := r.Get(search)
 	if err != nil {
@@ -113,10 +108,6 @@ func ChangePwd(w http.ResponseWriter, req *http.Request) {
 	注意：需要再系统记录用户的退出时间，暂时先MOCK
 */
 func ResetPwd(w http.ResponseWriter, req *http.Request) {
-	userId, _, tokenErr := common.CheckToken(w, req)
-	if tokenErr != nil {
-		return
-	}
 	var resetReq ResetPwdReq
 	var resetResp ResetPwdResp
 	err := json.NewDecoder(req.Body).Decode(&resetReq)
@@ -129,7 +120,7 @@ func ResetPwd(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	var search account.Search
-	search.LoginName = userId
+	search.LoginName = resetReq.LoginName
 	r := account.New(dbcomm.GetDB(), account.DEBUG)
 	p, err := r.Get(search)
 	if err != nil {
@@ -138,7 +129,17 @@ func ResetPwd(w http.ResponseWriter, req *http.Request) {
 		common.Write_Response(resetResp, w, req)
 		return
 	}
-	resetMap := map[string]interface{}{common.FIELD_LOGIN_PASS: common.DEFAULT_PWD, common.FIELD_ERRORS: 0}
+
+	if err := common.CheckSmsCode(resetReq.LoginName, resetReq.VerifyCode); err != nil {
+		resetResp.ErrCode = common.ERR_CODE_VERIFY
+		resetResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+		common.Write_Response(resetResp, w, req)
+		return
+	}
+
+	resetMap := map[string]interface{}{common.FIELD_LOGIN_PASS: resetReq.PassWord,
+		common.FIELD_ERRORS: 0,
+		"updated_time":      time.Now().Format("2006-01-02 15:04:05")}
 	err = r.UpdateMap(fmt.Sprintf("%d", p.Id), resetMap, nil)
 	if err != nil {
 		resetResp.ErrCode = common.ERR_CODE_DBERROR

@@ -362,7 +362,7 @@ func (r SmscodeList) GetLast(s Search) (*Smscode, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,phone,sms_code,sms_type,proc_status,proc_msg,status,verify_times,valid_btime,valid_etime,insert_time,version from b_smscode where 1=1 %s order by id desc limit 1", where)
+	qrySql := fmt.Sprintf("Select id,phone,sms_code,sms_type,proc_status,proc_msg,status,verify_times,valid_btime,valid_etime,insert_time,version from b_smscode where 1=1 %s order by id desc limit 1", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -377,7 +377,7 @@ func (r SmscodeList) GetLast(s Search) (*Smscode, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.Phone, &p.SmsCode, &p.SmsType, &p.ProcStatus, &p.ProcMsg, &p.Status, &p.VerifyTimes, &p.ValidBtime, &p.ValidEtime, &p.InsertTime, &p.Version)
+		err := rows.Scan(&p.Id, &p.Phone, &p.SmsCode, &p.SmsType, &p.ProcStatus, &p.ProcMsg, &p.Status, &p.VerifyTimes, &p.ValidBtime, &p.ValidEtime, &p.InsertTime, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -462,9 +462,9 @@ func (r *SmscodeList) GetList(s Search) ([]Smscode, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select id,user_id,phone,sms_code,sms_type,proc_status,proc_msg,status,verify_times,valid_btime,valid_etime,insert_time,update_time,version from b_smscode where 1=1 %s", where)
+		qrySql = fmt.Sprintf("Select id,phone,sms_code,sms_type,proc_status,proc_msg,status,verify_times,valid_btime,valid_etime,insert_time,update_time,version from b_smscode where 1=1 %s", where)
 	} else {
-		qrySql = fmt.Sprintf("Select id,user_id,phone,sms_code,sms_type,proc_status,proc_msg,status,verify_times,valid_btime,valid_etime,insert_time,update_time,version from b_smscode where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select id,phone,sms_code,sms_type,proc_status,proc_msg,status,verify_times,valid_btime,valid_etime,insert_time,update_time,version from b_smscode where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -478,7 +478,7 @@ func (r *SmscodeList) GetList(s Search) ([]Smscode, error) {
 
 	var p Smscode
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.Phone, &p.SmsCode, &p.SmsType, &p.ProcStatus, &p.ProcMsg, &p.Status, &p.VerifyTimes, &p.ValidBtime, &p.ValidEtime, &p.InsertTime, &p.UpdateTime, &p.Version)
+		rows.Scan(&p.Id, &p.Phone, &p.SmsCode, &p.SmsType, &p.ProcStatus, &p.ProcMsg, &p.Status, &p.VerifyTimes, &p.ValidBtime, &p.ValidEtime, &p.InsertTime, &p.UpdateTime, &p.Version)
 		r.Smscodes = append(r.Smscodes, p)
 	}
 	log.Println(SQL_ELAPSED, r)

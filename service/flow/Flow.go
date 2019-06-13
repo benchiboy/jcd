@@ -315,7 +315,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,trxn_date,done_date,insert_time,update_time,update_user,version from b_flow where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,version from b_flow where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -330,7 +330,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrepayId, &p.TrxnMemo, &p.TrxnDate, &p.DoneDate, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.TrxnNo, &p.TrxnAmt, &p.TrxnType, &p.ProcStatus, &p.ProcMsg, &p.AccountBal, &p.CodeUrl, &p.PrepayId, &p.TrxnMemo, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err

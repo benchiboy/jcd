@@ -22,23 +22,23 @@ const (
 )
 
 type Search struct {
-	Id          int64   `json:"id"`
-	UserId      int64   `json:"user_id"`
-	MctNo       string  `json:"mct_no"`
-	MctTrxnNo   string  `json:"mct_trxn_no"`
-	DisputeNo   int64   `json:"dispute_no"`
-	DisputeDate string  `json:"dispute_date"`
-	DisputeAmt  float64 `json:"dispute_amt"`
-	Status      string  `json:"status"`
-	DisputeMemo string  `json:"dispute_memo"`
-	InsertTime  string  `json:"insert_time"`
-	UpdateTime  string  `json:"update_time"`
-	UpdateUser  string  `json:"update_user"`
-	Version     int64   `json:"version"`
-	PageNo      int     `json:"page_no"`
-	PageSize    int     `json:"page_size"`
-	ExtraWhere  string  `json:"extra_where"`
-	SortFld     string  `json:"sort_fld"`
+	Id          int64  `json:"id"`
+	UserId      int64  `json:"user_id"`
+	MctNo       string `json:"mct_no"`
+	MctLoanNo   string `json:"mct_loan_no"`
+	Phone       string `json:"phone"`
+	Mail        string `json:"mail"`
+	DisputeNo   int64  `json:"dispute_no"`
+	DisputeMemo string `json:"dispute_memo"`
+	Status      string `json:"status"`
+	InsertTime  string `json:"insert_time"`
+	UpdateTime  string `json:"update_time"`
+	UpdateUser  string `json:"update_user"`
+	Version     int64  `json:"version"`
+	PageNo      int    `json:"page_no"`
+	PageSize    int    `json:"page_size"`
+	ExtraWhere  string `json:"extra_where"`
+	SortFld     string `json:"sort_fld"`
 }
 
 type DisputesList struct {
@@ -49,19 +49,20 @@ type DisputesList struct {
 }
 
 type Disputes struct {
-	Id          int64   `json:"id"`
-	UserId      int64   `json:"user_id"`
-	MctNo       string  `json:"mct_no"`
-	MctTrxnNo   string  `json:"mct_trxn_no"`
-	DisputeNo   int64   `json:"dispute_no"`
-	DisputeDate string  `json:"dispute_date"`
-	DisputeAmt  float64 `json:"dispute_amt"`
-	Status      string  `json:"status"`
-	DisputeMemo string  `json:"dispute_memo"`
-	InsertTime  string  `json:"insert_time"`
-	UpdateTime  string  `json:"update_time"`
-	UpdateUser  string  `json:"update_user"`
-	Version     int64   `json:"version"`
+	Id           int64  `json:"id"`
+	UserId       int64  `json:"user_id"`
+	MctNo        string `json:"mct_no"`
+	MctLoanNo    string `json:"mct_loan_no"`
+	Phone        string `json:"phone"`
+	Mail         string `json:"mail"`
+	DisputeNo    int64  `json:"dispute_no"`
+	DisputeMemo  string `json:"dispute_memo"`
+	FeedbackMemo string `json:"feedback_memo"`
+	Status       string `json:"status"`
+	InsertTime   string `json:"insert_time"`
+	UpdateTime   string `json:"update_time"`
+	UpdateUser   string `json:"update_user"`
+	Version      int64  `json:"version"`
 }
 
 type Form struct {
@@ -124,28 +125,28 @@ func (r *DisputesList) GetTotal(s Search) (int, error) {
 		where += " and mct_no='" + s.MctNo + "'"
 	}
 
-	if s.MctTrxnNo != "" {
-		where += " and mct_trxn_no='" + s.MctTrxnNo + "'"
+	if s.MctLoanNo != "" {
+		where += " and mct_loan_no='" + s.MctLoanNo + "'"
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
+	}
+
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
 	}
 
 	if s.DisputeNo != 0 {
 		where += " and dispute_no=" + fmt.Sprintf("%d", s.DisputeNo)
 	}
 
-	if s.DisputeDate != "" {
-		where += " and dispute_date='" + s.DisputeDate + "'"
-	}
-
-	if s.DisputeAmt != 0 {
-		where += " and dispute_amt=" + fmt.Sprintf("%f", s.DisputeAmt)
+	if s.DisputeMemo != "" {
+		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.Status != "" {
 		where += " and status='" + s.Status + "'"
-	}
-
-	if s.DisputeMemo != "" {
-		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.InsertTime != "" {
@@ -210,28 +211,28 @@ func (r DisputesList) Get(s Search) (*Disputes, error) {
 		where += " and mct_no='" + s.MctNo + "'"
 	}
 
-	if s.MctTrxnNo != "" {
-		where += " and mct_trxn_no='" + s.MctTrxnNo + "'"
+	if s.MctLoanNo != "" {
+		where += " and mct_loan_no='" + s.MctLoanNo + "'"
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
+	}
+
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
 	}
 
 	if s.DisputeNo != 0 {
 		where += " and dispute_no=" + fmt.Sprintf("%d", s.DisputeNo)
 	}
 
-	if s.DisputeDate != "" {
-		where += " and dispute_date='" + s.DisputeDate + "'"
-	}
-
-	if s.DisputeAmt != 0 {
-		where += " and dispute_amt=" + fmt.Sprintf("%f", s.DisputeAmt)
+	if s.DisputeMemo != "" {
+		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.Status != "" {
 		where += " and status='" + s.Status + "'"
-	}
-
-	if s.DisputeMemo != "" {
-		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.InsertTime != "" {
@@ -254,7 +255,7 @@ func (r DisputesList) Get(s Search) (*Disputes, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,dispute_no,dispute_date,dispute_amt,status,dispute_memo,insert_time,update_time,update_user,version from b_disputes where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_loan_no,phone,mail,dispute_no,dispute_memo,status,insert_time,update_time,update_user,version from b_disputes where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -269,7 +270,7 @@ func (r DisputesList) Get(s Search) (*Disputes, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.DisputeNo, &p.DisputeDate, &p.DisputeAmt, &p.Status, &p.DisputeMemo, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		err := rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctLoanNo, &p.Phone, &p.Mail, &p.DisputeNo, &p.DisputeMemo, &p.Status, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -304,28 +305,28 @@ func (r *DisputesList) GetList(s Search) ([]Disputes, error) {
 		where += " and mct_no='" + s.MctNo + "'"
 	}
 
-	if s.MctTrxnNo != "" {
-		where += " and mct_trxn_no='" + s.MctTrxnNo + "'"
+	if s.MctLoanNo != "" {
+		where += " and mct_loan_no='" + s.MctLoanNo + "'"
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
+	}
+
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
 	}
 
 	if s.DisputeNo != 0 {
 		where += " and dispute_no=" + fmt.Sprintf("%d", s.DisputeNo)
 	}
 
-	if s.DisputeDate != "" {
-		where += " and dispute_date='" + s.DisputeDate + "'"
-	}
-
-	if s.DisputeAmt != 0 {
-		where += " and dispute_amt=" + fmt.Sprintf("%f", s.DisputeAmt)
+	if s.DisputeMemo != "" {
+		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.Status != "" {
 		where += " and status='" + s.Status + "'"
-	}
-
-	if s.DisputeMemo != "" {
-		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.InsertTime != "" {
@@ -350,9 +351,9 @@ func (r *DisputesList) GetList(s Search) ([]Disputes, error) {
 
 	var qrySql string
 	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,dispute_no,dispute_date,dispute_amt,status,dispute_memo,insert_time,update_time,update_user,version from b_disputes where 1=1 %s", where)
+		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_loan_no,phone,mail,dispute_no,dispute_memo,feedback_memo,status,insert_time,update_time,update_user,version from b_disputes where 1=1 %s", where)
 	} else {
-		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,dispute_no,dispute_date,dispute_amt,status,dispute_memo,insert_time,update_time,update_user,version from b_disputes where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
+		qrySql = fmt.Sprintf("Select id,user_id,mct_no,mct_loan_no,phone,mail,dispute_no,dispute_memo,feedback_memo,status,insert_time,update_time,update_user,version from b_disputes where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
 	}
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -366,7 +367,7 @@ func (r *DisputesList) GetList(s Search) ([]Disputes, error) {
 
 	var p Disputes
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctTrxnNo, &p.DisputeNo, &p.DisputeDate, &p.DisputeAmt, &p.Status, &p.DisputeMemo, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
+		rows.Scan(&p.Id, &p.UserId, &p.MctNo, &p.MctLoanNo, &p.Phone, &p.Mail, &p.DisputeNo, &p.DisputeMemo, &p.FeedbackMemo, &p.Status, &p.InsertTime, &p.UpdateTime, &p.UpdateUser, &p.Version)
 		r.Disputess = append(r.Disputess, p)
 	}
 	log.Println(SQL_ELAPSED, r)
@@ -398,28 +399,28 @@ func (r *DisputesList) GetExt(s Search) (map[string]string, error) {
 		where += " and mct_no='" + s.MctNo + "'"
 	}
 
-	if s.MctTrxnNo != "" {
-		where += " and mct_trxn_no='" + s.MctTrxnNo + "'"
+	if s.MctLoanNo != "" {
+		where += " and mct_loan_no='" + s.MctLoanNo + "'"
+	}
+
+	if s.Phone != "" {
+		where += " and phone='" + s.Phone + "'"
+	}
+
+	if s.Mail != "" {
+		where += " and mail='" + s.Mail + "'"
 	}
 
 	if s.DisputeNo != 0 {
 		where += " and dispute_no=" + fmt.Sprintf("%d", s.DisputeNo)
 	}
 
-	if s.DisputeDate != "" {
-		where += " and dispute_date='" + s.DisputeDate + "'"
-	}
-
-	if s.DisputeAmt != 0 {
-		where += " and dispute_amt=" + fmt.Sprintf("%f", s.DisputeAmt)
+	if s.DisputeMemo != "" {
+		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.Status != "" {
 		where += " and status='" + s.Status + "'"
-	}
-
-	if s.DisputeMemo != "" {
-		where += " and dispute_memo='" + s.DisputeMemo + "'"
 	}
 
 	if s.InsertTime != "" {
@@ -438,7 +439,7 @@ func (r *DisputesList) GetExt(s Search) (map[string]string, error) {
 		where += " and version=" + fmt.Sprintf("%d", s.Version)
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,dispute_no,dispute_date,dispute_amt,status,dispute_memo,insert_time,update_time,update_user,version from b_disputes where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_loan_no,phone,mail,dispute_no,dispute_memo,status,insert_time,update_time,update_user,version from b_disputes where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -484,11 +485,11 @@ func (r *DisputesList) GetExt(s Search) (map[string]string, error) {
 
 func (r DisputesList) Insert(p Disputes) error {
 	l := time.Now()
-	exeSql := fmt.Sprintf("Insert into  b_disputes(user_id,mct_no,mct_trxn_no,dispute_no,dispute_date,dispute_amt,status,dispute_memo,update_user,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	exeSql := fmt.Sprintf("Insert into  b_disputes(user_id,mct_no,mct_loan_no,phone,mail,dispute_no,dispute_memo,status,update_user,version)  values(?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if r.Level == DEBUG {
 		log.Println(SQL_INSERT, exeSql)
 	}
-	_, err := r.DB.Exec(exeSql, p.UserId, p.MctNo, p.MctTrxnNo, p.DisputeNo, p.DisputeDate, p.DisputeAmt, p.Status, p.DisputeMemo, p.UpdateUser, p.Version)
+	_, err := r.DB.Exec(exeSql, p.UserId, p.MctNo, p.MctLoanNo, p.Phone, p.Mail, p.DisputeNo, p.DisputeMemo, p.Status, p.UpdateUser, p.Version)
 	if err != nil {
 		log.Println(SQL_ERROR, err.Error())
 		return err
@@ -522,10 +523,22 @@ func (r DisputesList) InsertEntity(p Disputes, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.MctNo)
 	}
 
-	if p.MctTrxnNo != "" {
-		colNames += "mct_trxn_no,"
+	if p.MctLoanNo != "" {
+		colNames += "mct_loan_no,"
 		colTags += "?,"
-		valSlice = append(valSlice, p.MctTrxnNo)
+		valSlice = append(valSlice, p.MctLoanNo)
+	}
+
+	if p.Phone != "" {
+		colNames += "phone,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.Phone)
+	}
+
+	if p.Mail != "" {
+		colNames += "mail,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.Mail)
 	}
 
 	if p.DisputeNo != 0 {
@@ -534,28 +547,16 @@ func (r DisputesList) InsertEntity(p Disputes, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.DisputeNo)
 	}
 
-	if p.DisputeDate != "" {
-		colNames += "dispute_date,"
+	if p.DisputeMemo != "" {
+		colNames += "dispute_memo,"
 		colTags += "?,"
-		valSlice = append(valSlice, p.DisputeDate)
-	}
-
-	if p.DisputeAmt != 0.00 {
-		colNames += "dispute_amt,"
-		colTags += "?,"
-		valSlice = append(valSlice, p.DisputeAmt)
+		valSlice = append(valSlice, p.DisputeMemo)
 	}
 
 	if p.Status != "" {
 		colNames += "status,"
 		colTags += "?,"
 		valSlice = append(valSlice, p.Status)
-	}
-
-	if p.DisputeMemo != "" {
-		colNames += "dispute_memo,"
-		colTags += "?,"
-		valSlice = append(valSlice, p.DisputeMemo)
 	}
 
 	if p.UpdateUser != "" {
@@ -690,10 +691,22 @@ func (r DisputesList) UpdataEntity(keyNo string, p Disputes, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.MctNo)
 	}
 
-	if p.MctTrxnNo != "" {
-		colNames += "mct_trxn_no=?,"
+	if p.MctLoanNo != "" {
+		colNames += "mct_loan_no=?,"
 
-		valSlice = append(valSlice, p.MctTrxnNo)
+		valSlice = append(valSlice, p.MctLoanNo)
+	}
+
+	if p.Phone != "" {
+		colNames += "phone=?,"
+
+		valSlice = append(valSlice, p.Phone)
+	}
+
+	if p.Mail != "" {
+		colNames += "mail=?,"
+
+		valSlice = append(valSlice, p.Mail)
 	}
 
 	if p.DisputeNo != 0 {
@@ -701,27 +714,16 @@ func (r DisputesList) UpdataEntity(keyNo string, p Disputes, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.DisputeNo)
 	}
 
-	if p.DisputeDate != "" {
-		colNames += "dispute_date=?,"
+	if p.DisputeMemo != "" {
+		colNames += "dispute_memo=?,"
 
-		valSlice = append(valSlice, p.DisputeDate)
-	}
-
-	if p.DisputeAmt != 0.00 {
-		colNames += "dispute_amt=?,"
-		valSlice = append(valSlice, p.DisputeAmt)
+		valSlice = append(valSlice, p.DisputeMemo)
 	}
 
 	if p.Status != "" {
 		colNames += "status=?,"
 
 		valSlice = append(valSlice, p.Status)
-	}
-
-	if p.DisputeMemo != "" {
-		colNames += "dispute_memo=?,"
-
-		valSlice = append(valSlice, p.DisputeMemo)
 	}
 
 	if p.InsertTime != "" {

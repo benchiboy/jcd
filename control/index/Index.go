@@ -50,10 +50,7 @@ type Series struct {
 */
 
 func BadPLoanList(w http.ResponseWriter, req *http.Request) {
-	_, _, tokenErr := common.CheckToken(w, req)
-	if tokenErr != nil {
-		return
-	}
+
 	var listReq BadIndexListReq
 	var listResp BadIndexListResp
 	err := json.NewDecoder(req.Body).Decode(&listReq)

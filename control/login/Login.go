@@ -10,6 +10,7 @@ import (
 	"jcd/service/login"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -32,6 +33,7 @@ type LoginResp struct {
 /*
 	根据CODE 得到OPENID
 */
+
 func wxGetOpenid(code string) (error, string, string, string) {
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second,
@@ -104,8 +106,8 @@ func regUser(openId string, unionId string, sessionKey string) (string, error) {
 /*
  */
 type SigninReq struct {
-	UserName string `json:"user_name"`
-	PassWord string `json:"pass_word"`
+	UserName string `json:"login_name"`
+	PassWord string `json:"login_pass"`
 }
 
 /*
@@ -114,7 +116,19 @@ type SigninResp struct {
 	ErrCode       string `json:"err_code"`
 	ErrMsg        string `json:"err_msg"`
 	Token         string `json:"token"`
+	NickName      string `json:"nick_name"`
+	UserId        int64  `json:"user_id"`
 	LastLoginTime string `json:"last_login_time"`
+}
+
+/*
+ */
+type CheckSigninResp struct {
+	UserId   int64  `json:"user_id"`
+	NickName string `json:"nick_name"`
+	IsSignIn bool   `json:"is_signin"`
+	ErrCode  string `json:"err_code"`
+	ErrMsg   string `json:"err_msg"`
 }
 
 /*
@@ -122,6 +136,28 @@ type SigninResp struct {
 type LogoutResp struct {
 	ErrCode string `json:"err_code"`
 	ErrMsg  string `json:"err_msg"`
+}
+
+/*
+	检查是否登录
+*/
+func CheckSignIn(w http.ResponseWriter, req *http.Request) {
+	common.PrintHead("CheckSignIn")
+	userId, _, nickName, tokenErr := common.CheckToken(w, req)
+	if tokenErr != nil {
+		return
+	}
+	uId, _ := strconv.ParseInt(userId, 10, 64)
+	var checkSigninResp CheckSigninResp
+	checkSigninResp.NickName = nickName
+	checkSigninResp.UserId = uId
+	checkSigninResp.IsSignIn = true
+
+	checkSigninResp.ErrCode = common.CODE_SUCC
+	checkSigninResp.ErrMsg = common.ERROR_MAP[common.CODE_SUCC]
+	common.Write_Response(checkSigninResp, w, req)
+
+	common.PrintHead("CheckSignIn")
 }
 
 /*
@@ -164,7 +200,7 @@ func SignIn(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tokenStr, err := common.GetToken(fmt.Sprintf("%d", e.UserId))
+	tokenStr, err := common.GetToken(fmt.Sprintf("%d", e.UserId), e.NickName)
 	if err != nil {
 		loginResp.ErrCode = common.ERR_CODE_TOKENER
 		loginResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_TOKENER] + err.Error()
@@ -173,7 +209,9 @@ func SignIn(w http.ResponseWriter, req *http.Request) {
 	}
 
 	loginResp.ErrCode = common.ERR_CODE_SUCCESS
-	loginResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS] + login.UserName + "登录成功！"
+	loginResp.NickName = e.NickName
+	loginResp.UserId = e.UserId
+	loginResp.ErrMsg = "用户 " + login.UserName + " 登录成功！"
 	loginResp.Token = tokenStr
 	common.PrintTail("SignIn")
 	common.Write_Response(loginResp, w, req)
@@ -184,7 +222,7 @@ func SignIn(w http.ResponseWriter, req *http.Request) {
 
 */
 func SignOut(w http.ResponseWriter, req *http.Request) {
-	_, _, err := common.CheckToken(w, req)
+	_, _, _, err := common.CheckToken(w, req)
 	if err != nil {
 		return
 	}

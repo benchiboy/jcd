@@ -35,7 +35,7 @@ type BadLoanListResp struct {
 */
 
 func BadPLoanList(w http.ResponseWriter, req *http.Request) {
-	_, _, tokenErr := common.CheckToken(w, req)
+	_, _, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}

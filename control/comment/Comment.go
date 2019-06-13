@@ -19,7 +19,7 @@ import (
 */
 type CommentListReq struct {
 	PageNo   int `json:"page_no"`
-	PageSize int `json:"page_no"`
+	PageSize int `json:"page_size"`
 }
 
 /*
@@ -76,8 +76,10 @@ type CommentPostReq struct {
 	投递一评论结果
 */
 type CommentPostResp struct {
-	ErrCode string `json:"err_code"`
-	ErrMsg  string `json:"err_msg"`
+	CommNo   int64  `json:"comm_no"`
+	NickName string `json:"nick_name"`
+	ErrCode  string `json:"err_code"`
+	ErrMsg   string `json:"err_msg"`
 }
 
 /*
@@ -93,20 +95,41 @@ type CommentReplyReq struct {
 	回复一评论应答
 */
 type CommentReplyResp struct {
-	ErrCode string `json:"err_code"`
-	ErrMsg  string `json:"err_msg"`
+	NickName string `json:"nick_name"`
+	ErrCode  string `json:"err_code"`
+	ErrMsg   string `json:"err_msg"`
+}
+
+func GetReplyList(userId int64, commNo int64, list *([]comment.Comment)) {
+	common.PrintHead("GetReplyList")
+	var search comment.Search
+	search.ParentCommNo = commNo
+	r := comment.New(dbcomm.GetDB(), comment.DEBUG)
+	l, _ := r.GetList(search)
+	if l == nil {
+		return
+	}
+	for _, v := range l {
+		if v.UserId != userId {
+			v.IsEableReply = true
+		}
+		*list = append(*list, v)
+		fmt.Println("=======>", v)
+		GetReplyList(userId, v.CommNo, list)
+	}
+	common.PrintTail("GetReplyList")
 }
 
 /*
-	获取用户发送的评论列表
+	获取用户发布的评论
 */
-
 func CommentList(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("CommentList")
-	_, _, tokenErr := common.CheckToken(w, req)
+	userId, _, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}
+	uId, _ := strconv.ParseInt(userId, 10, 64)
 	var listReq CommentListReq
 	var listResp CommentListResp
 	err := json.NewDecoder(req.Body).Decode(&listReq)
@@ -117,25 +140,56 @@ func CommentList(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer req.Body.Close()
-
 	var search comment.Search
 	search.PageNo = listReq.PageNo
 	search.PageSize = listReq.PageSize
 	search.ParentCommNo = 0
-
 	r := comment.New(dbcomm.GetDB(), comment.DEBUG)
 	l, err := r.GetList(search)
 	total, err := r.GetTotal(search)
-
 	for k, v := range l {
-		rr := comment.New(dbcomm.GetDB(), comment.DEBUG)
-		var subSearch comment.Search
-		subSearch.ParentCommNo = v.CommNo
-		ll, _ := rr.GetList(subSearch)
-		if len(ll) > 0 {
-			l[k].ReplyList = ll
+		if v.UserId != uId {
+			l[k].IsEableReply = true
 		}
+		var repay_list []comment.Comment
+		GetReplyList(uId, v.CommNo, &repay_list)
+		l[k].ReplyList = repay_list
 	}
+	listResp.ErrCode = common.ERR_CODE_SUCCESS
+	listResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+	listResp.CommList = l
+	listResp.Total = total
+	common.Write_Response(listResp, w, req)
+	common.PrintTail("CommentList")
+}
+
+/*
+	获取用户发布的评论
+*/
+func MyCommentList(w http.ResponseWriter, req *http.Request) {
+	common.PrintHead("CommentList")
+	userId, _, _, tokenErr := common.CheckToken(w, req)
+	if tokenErr != nil {
+		return
+	}
+	uId, _ := strconv.ParseInt(userId, 10, 64)
+	var listReq CommentListReq
+	var listResp CommentListResp
+	err := json.NewDecoder(req.Body).Decode(&listReq)
+	if err != nil {
+		listResp.ErrCode = common.ERR_CODE_JSONERR
+		listResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_JSONERR] + "请求报文格式有误！" + err.Error()
+		common.Write_Response(listResp, w, req)
+		return
+	}
+	defer req.Body.Close()
+	var search comment.Search
+	search.PageNo = listReq.PageNo
+	search.PageSize = listReq.PageSize
+	search.UserId = uId
+	r := comment.New(dbcomm.GetDB(), comment.DEBUG)
+	l, err := r.GetList(search)
+	total, err := r.GetTotal(search)
 	listResp.ErrCode = common.ERR_CODE_SUCCESS
 	listResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	listResp.CommList = l
@@ -150,7 +204,7 @@ func CommentList(w http.ResponseWriter, req *http.Request) {
 
 func CommentPost(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("CommentPost")
-	userId, _, tokenErr := common.CheckToken(w, req)
+	userId, _, nickName, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}
@@ -165,12 +219,12 @@ func CommentPost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer req.Body.Close()
-
 	r := comment.New(dbcomm.GetDB(), comment.DEBUG)
 
 	var e comment.Comment
 	e.UserId = uId
-	e.CommNo = time.Now().UnixNano()
+	commNo := time.Now().UnixNano()
+	e.CommNo = commNo
 	e.Likes = common.COMMENT_INIT_VALUE
 	e.Title = postReq.Title
 	e.Context = postReq.Context
@@ -182,23 +236,25 @@ func CommentPost(w http.ResponseWriter, req *http.Request) {
 		common.Write_Response(postResp, w, req)
 		return
 	}
+	postResp.CommNo = commNo
+	postResp.NickName = nickName
 	postResp.ErrCode = common.ERR_CODE_SUCCESS
 	postResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(postResp, w, req)
 	common.PrintTail("CommentPost")
-
 }
 
 /*
 	LIKE 某个评论
 */
 func CommentLike(w http.ResponseWriter, req *http.Request) {
-	common.PrintHead("CommentPost")
-	userId, _, tokenErr := common.CheckToken(w, req)
+	common.PrintHead("CommentLike")
+	userId, _, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}
 	uId, _ := strconv.ParseInt(userId, 10, 64)
+	fmt.Println("UserId=====>", uId)
 	var likeReq CommentLikeReq
 	var likeResp CommentLikeResp
 	err := json.NewDecoder(req.Body).Decode(&likeReq)
@@ -241,7 +297,6 @@ func CommentLike(w http.ResponseWriter, req *http.Request) {
 		common.Write_Response(likeResp, w, req)
 		return
 	}
-
 	rrr := comment_user.New(rr.DB, comment_user.DEBUG)
 	var ne comment_user.CommentUser
 	ne.UserId = uId
@@ -276,7 +331,7 @@ func CommentLike(w http.ResponseWriter, req *http.Request) {
 func CommentKill(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("CommentKill")
 
-	userId, _, tokenErr := common.CheckToken(w, req)
+	userId, _, _, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}
@@ -355,9 +410,8 @@ func CommentKill(w http.ResponseWriter, req *http.Request) {
 	回复某个评论
 */
 func CommentReply(w http.ResponseWriter, req *http.Request) {
-
 	common.PrintTail("CommentReply")
-	userId, _, tokenErr := common.CheckToken(w, req)
+	userId, _, nickName, tokenErr := common.CheckToken(w, req)
 	if tokenErr != nil {
 		return
 	}
@@ -384,7 +438,6 @@ func CommentReply(w http.ResponseWriter, req *http.Request) {
 		common.Write_Response(replyResp, w, req)
 		return
 	}
-
 	var ee comment.Comment
 	ee.CommNo = time.Now().UnixNano()
 	ee.Title = replyReq.Title
@@ -393,7 +446,7 @@ func CommentReply(w http.ResponseWriter, req *http.Request) {
 	ee.UserId = uId
 	ee.InsertTime = time.Now().Format("2006-01-02 15:04:05")
 	r.InsertEntity(ee, nil)
-
+	replyResp.NickName = nickName
 	replyResp.ErrCode = common.ERR_CODE_SUCCESS
 	replyResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(replyResp, w, req)
