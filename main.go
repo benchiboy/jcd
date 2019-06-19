@@ -10,22 +10,22 @@ import (
 	"jcd/control/badloan"
 	"jcd/control/comment"
 	"jcd/control/flow"
-	"jcd/control/index"
-	"jcd/control/region"
-
 	"jcd/control/home"
+	"jcd/control/index"
 	"jcd/control/login"
 	"jcd/control/oauth"
 	"jcd/control/payutil"
 	"jcd/control/pwd"
+	"jcd/control/region"
+	"jcd/control/tiplist"
 
 	"jcd/control/smscode"
 
+	"jcd/service/dbcomm"
+	//"jcd/util"
 	"log"
 	"net/http"
 	"os"
-
-	"jcd/service/dbcomm"
 
 	goconf "github.com/pantsing/goconf"
 
@@ -62,12 +62,12 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/setaccount", account.SetAccount)
 	http.HandleFunc("/jc/api/getavatar", account.GetAvatarUrl)
 
+	http.HandleFunc("/jc/api/tiplist", tiplist.GetTipList)
 	http.HandleFunc("/jc/api/disputes", flow.Disputes)
 	http.HandleFunc("/jc/api/signin", login.SignIn)
 	http.HandleFunc("/jc/api/checksignin", account.CheckSignIn)
 
 	http.HandleFunc("/jc/api/signout", login.SignOut)
-
 	http.HandleFunc("/jc/api/signup", account.SignUp)
 	http.HandleFunc("/jc/api/resetpwd", pwd.ResetPwd)
 	http.HandleFunc("/jc/api/chgpwd", pwd.ChangePwd)
@@ -77,8 +77,7 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/repay", flow.RepayOrder)
 	http.HandleFunc("/jc/api/myflowlist", flow.MyFlowList)
 	http.HandleFunc("/jc/api/myfeedbacklist", flow.MyFeedbackList)
-
-	http.HandleFunc("/jc/api/getpaystatus", payutil.GetOrderStatus)
+	http.HandleFunc("/jc/api/orderquery", flow.OrderStatus)
 	//验证码相关
 	http.HandleFunc("/jc/api/getsmscode", smscode.GetSmsCodeEx)
 	http.HandleFunc("/jc/api/checksmscode", smscode.CheckSmsCode)
@@ -94,7 +93,6 @@ func go_WebServer() {
 	//逾期指数接口
 	http.HandleFunc("/jc/api/badfact", index.BadPLoanList)
 	http.HandleFunc("/jc/api/badploan", badloan.BadPLoanList)
-
 	http.HandleFunc("/jc/api/home", home.Home)
 	//基础参数信息
 	http.HandleFunc("/jc/api/getregion", region.GetRegionList)
@@ -137,5 +135,45 @@ func init() {
 
 func main() {
 	dbcomm.InitDB(dbUrl, ccdbUrl, idleConns, openConns)
+	go func() {
+		//sch := util.New_Schdule()
+		//		sch.Add_TaskFunc(1001, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-01", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1002, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-10", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1003, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-20", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1004, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-30", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1005, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-40", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1006, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-50", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1007, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-05", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1008, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-15", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1009, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-25", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1010, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-35", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1011, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-45", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Add_TaskFunc(1012, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-55", func(taskId int) {
+		//			flow.QueryOrder()
+		//		})
+		//		sch.Run()
+	}()
 	go_WebServer()
 }

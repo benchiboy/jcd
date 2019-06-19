@@ -27,7 +27,9 @@ import (
 )
 
 var (
-	WX_PAY_URL          = "https://api.mch.weixin.qq.com/pay/unifiedorder"
+	WX_PAY_URL   = "https://api.mch.weixin.qq.com/pay/unifiedorder"
+	WX_QUERY_URL = "https://api.mch.weixin.qq.com/pay/orderquery"
+
 	WX_PAY_CALLBACK_URL = "http://www.doulaikan.club/jc/api/wxpaycallback"
 	MCT_ID              = "1452819402"
 	APP_ID              = "wx2db791be2eb77467"
@@ -67,6 +69,7 @@ const ERR_CODE_TOOBUSY = "6010"
 const ERR_CODE_VERIFY = "7020"
 const ERR_CODE_PAYERR = "8010"
 const ERR_CODE_QRCODE = "7060"
+const ERR_CODE_PAYDOING = "6666"
 
 const ERR_USER_MSTSIGNUP = "7901"
 const ERR_USER_SIGNINED = "7902"
@@ -142,6 +145,7 @@ var (
 		ERR_USER_SIGNINED:  "用户已经登录",
 		ERR_USER_UNSIGNIN:  "用户需要登录",
 		ERR_SMS_SENDERR:    "发送短信出错",
+		ERR_CODE_PAYDOING:  "支付中",
 	}
 )
 
@@ -276,6 +280,48 @@ func CheckToken(w http.ResponseWriter, req *http.Request) (string, string, strin
 		errResp.ErrCode = ERR_CODE_TYPEERR
 		errResp.ErrMsg = ERROR_MAP[ERR_CODE_TYPEERR] + "nickName"
 		Write_Response(errResp, w, req)
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
+	}
+
+	return userId, maxTimes, nickName, nil
+}
+
+/*
+	说明：根据TOKEN 进行校验
+	入参：
+	出参：参数1：Token
+		 参数1：Error
+*/
+
+func CheckTokenExt(w http.ResponseWriter, req *http.Request) (string, string, string, error) {
+	PrintHead("CheckTokenExt")
+	auth := req.Header.Get("Authorization")
+	var authB64 string
+	auths := strings.SplitN(auth, " ", 2)
+	if len(auths) != 2 {
+		authB64 = auth
+	} else {
+		authB64 = auths[1]
+	}
+	claims := make(jwt.MapClaims)
+	_, err := jwt.ParseWithClaims(authB64, claims, func(*jwt.Token) (interface{}, error) {
+		return []byte(TOKEN_KEY), nil
+	})
+	if err != nil {
+		//if err.Error() == "Token is expired" {
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, err
+	}
+	userId, ok := claims["aud"].(string)
+	if !ok {
+
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
+	}
+	maxTimes, ok := claims["cnt"].(string)
+	if !ok {
+		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
+	}
+	nickName, ok := claims["nne"].(string)
+	if !ok {
 		return EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, fmt.Errorf("Assertion Error.")
 	}
 

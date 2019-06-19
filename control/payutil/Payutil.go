@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -17,17 +16,6 @@ import (
 	"strings"
 	"time"
 )
-
-//首先定义一个UnifyOrderReq用于填入我们要传入的参数。
-type GetOrderReq struct {
-	Trxn_no int64 `xml:"trxn_no"`
-}
-
-type GetOrderResp struct {
-	ErrCode string `json:"err_code"`
-	ErrMsg  string `json:"err_msg"`
-	Status  string `xml:"status"`
-}
 
 //首先定义一个UnifyOrderReq用于填入我们要传入的参数。
 type UnifyOrderReq struct {
@@ -53,6 +41,43 @@ type UnifyOrderResp struct {
 	Code_url    string `xml:"code_url"`
 }
 
+//微信订单状态查询请求
+type OrderQueryReq struct {
+	Appid        string `xml:"appid"`
+	Mch_id       string `xml:"mch_id"`
+	Mch_OrderNo  string `xml:"transaction_id"`
+	Out_trade_no string `xml:"out_trade_no"`
+	Nonce_str    string `xml:"nonce_str"`
+	Sign         string `xml:"sign"`
+}
+
+/*
+
+ */
+type OrderQueryResp struct {
+	Return_code      string `xml:"return_code"`
+	Return_msg       string `xml:"return_msg"`
+	Appid            string `xml:"appid"`
+	Mch_id           string `xml:"mch_id"`
+	Nonce            string `xml:"nonce_str"`
+	Sign             string `xml:"sign"`
+	Result_code      string `xml:"result_code"`
+	Err_code         string `xml:"err_code"`
+	Err_code_des     string `xml:"err_code_des"`
+	Trade_type       string `xml:"trade_type"`
+	Trade_state      string `xml:"trade_state"`
+	Bank_type        string `xml:"bank_type"`
+	Total_fee        string `xml:"total_fee"`
+	Cash_fee         string `xml:"cash_fee"`
+	Transaction_id   string `xml:"transaction_id"`
+	Out_trade_no     string `xml:"out_trade_no"`
+	Time_end         string `xml:"time_end"`
+	Trade_state_desc string `xml:"trade_state_desc"`
+}
+
+/*
+
+ */
 type WXPayNotifyReq struct {
 	Return_code    string `xml:"return_code"`
 	Return_msg     string `xml:"return_msg"`
@@ -74,6 +99,7 @@ type WXPayNotifyReq struct {
 	Attach         string `xml:"attach"`
 	Time_end       string `xml:"time_end"`
 }
+
 type WXPayNotifyResp struct {
 	Return_code string `xml:"return_code"`
 	Return_msg  string `xml:"return_msg"`
@@ -108,40 +134,8 @@ func wxpayCalcSign(mReq map[string]interface{}, key string) (sign string) {
 	return upperSign
 }
 
-/*
-	得到支付订单的状态
-*/
-func GetOrderStatus(w http.ResponseWriter, r *http.Request) {
-	common.PrintHead("GetOrderStatus")
-	var orderReq GetOrderReq
-	var orderResp GetOrderResp
-	err := json.NewDecoder(r.Body).Decode(&orderReq)
-	if err != nil {
-		orderResp.ErrCode = common.ERR_CODE_JSONERR
-		orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_JSONERR] + "请求报文格式有误！" + err.Error()
-		common.Write_Response(orderResp, w, r)
-		return
-	}
-	defer r.Body.Close()
-	var search flow.Search
-	search.TrxnNo = orderReq.Trxn_no
-	fw := flow.New(dbcomm.GetDB(), flow.DEBUG)
-	e, err := fw.Get(search)
-	if err != nil {
-		orderResp.ErrCode = common.ERR_CODE_DBERROR
-		orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
-		common.Write_Response(orderResp, w, r)
-		return
-	}
-	orderResp.ErrCode = common.ERR_CODE_SUCCESS
-	orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
-	orderResp.Status = e.ProcStatus
-	common.Write_Response(orderResp, w, r)
-
-	common.PrintTail("GetOrderStatus")
-}
-
 func UnionPayOrder(mctTrxnNo string, totalFee int) (string, string, error) {
+	common.PrintHead("UnionPayOrder")
 	var orderReq UnifyOrderReq
 	orderReq.Appid = common.APP_ID
 	orderReq.Body = common.PRODUCT_NAME
@@ -197,12 +191,74 @@ func UnionPayOrder(mctTrxnNo string, totalFee int) (string, string, error) {
 		fmt.Println(err.Error())
 		return common.EMPTY_STRING, common.EMPTY_STRING, err
 	}
-	fmt.Println("Body=================>", string(body))
+	fmt.Println("WxPay Body:", string(body))
 	var uniResp UnifyOrderResp
 	err = xml.Unmarshal(body, &uniResp)
-	fmt.Println("=====================>")
 	fmt.Println("=====================>", uniResp.Code_url)
+	common.PrintTail("UnionPayOrder")
 	return uniResp.Prepay_id, uniResp.Code_url, nil
+}
+
+/*
+  微信支付订单查询
+*/
+
+func WxOrderQuery(mctTrxnNo string) (string, string, string, string) {
+	common.PrintHead("WxOrderQuery")
+	var orderQuery OrderQueryReq
+	orderQuery.Appid = common.APP_ID
+	orderQuery.Mch_id = common.MCT_ID
+	orderQuery.Nonce_str = fmt.Sprintf("%d", time.Now().Unix())
+	orderQuery.Out_trade_no = mctTrxnNo
+
+	var m map[string]interface{}
+	m = make(map[string]interface{}, 0)
+	m["appid"] = orderQuery.Appid
+	m["mch_id"] = orderQuery.Mch_id
+	m["out_trade_no"] = orderQuery.Appid
+	m["out_trade_no"] = orderQuery.Out_trade_no
+	m["nonce_str"] = orderQuery.Nonce_str
+	orderQuery.Sign = wxpayCalcSign(m, common.MCT_KEY) //这个是计算wxpay签名的函数上面已贴出
+	bytes_req, err := xml.Marshal(orderQuery)
+	if err != nil {
+		fmt.Println("以xml形式编码发送错误, 原因:", err)
+		return common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING
+	}
+	str_req := string(bytes_req)
+	str_req = strings.Replace(str_req, "OrderQueryReq", "xml", -1)
+	bytes_req = []byte(str_req)
+	fmt.Println(string(bytes_req))
+
+	req, err := http.NewRequest("POST", common.WX_QUERY_URL, bytes.NewReader(bytes_req))
+	if err != nil {
+		fmt.Println("New Http Request发生错误，原因:", err)
+		return common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING
+	}
+	req.Header.Set("Accept", "application/xml")
+	req.Header.Set("Content-Type", "application/xml;charset=utf-8")
+	c := http.Client{}
+	resp, _err := c.Do(req)
+	if _err != nil {
+		fmt.Println("请求微信支付统一下单接口发送错误, 原因:", _err)
+		return common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING
+	}
+	fmt.Println(resp)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err.Error())
+		return common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING, common.EMPTY_STRING
+	}
+	fmt.Println("WX-Body:", string(body))
+	var queryResp OrderQueryResp
+	err = xml.Unmarshal(body, &queryResp)
+	fmt.Println("===>", queryResp.Return_code, queryResp.Result_code, queryResp.Trade_state, queryResp.Err_code_des)
+	common.PrintTail("WxOrderQuery")
+	if queryResp.Result_code == "FAIL" {
+		return queryResp.Return_code, queryResp.Result_code, queryResp.Trade_state, queryResp.Err_code_des
+	}
+	return queryResp.Return_code, queryResp.Result_code, queryResp.Trade_state, queryResp.Trade_state_desc
+
 }
 
 //微信支付签名验证函数

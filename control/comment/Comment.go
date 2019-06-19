@@ -125,11 +125,13 @@ func GetReplyList(userId int64, commNo int64, list *([]comment.Comment)) {
 */
 func CommentList(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("CommentList")
-	userId, _, _, tokenErr := common.CheckToken(w, req)
+	userId, _, _, tokenErr := common.CheckTokenExt(w, req)
+	var uId int64
 	if tokenErr != nil {
-		return
+		uId, _ = strconv.ParseInt("99999999999", 10, 64)
+	} else {
+		uId, _ = strconv.ParseInt(userId, 10, 64)
 	}
-	uId, _ := strconv.ParseInt(userId, 10, 64)
 	var listReq CommentListReq
 	var listResp CommentListResp
 	err := json.NewDecoder(req.Body).Decode(&listReq)
@@ -146,6 +148,7 @@ func CommentList(w http.ResponseWriter, req *http.Request) {
 	search.ParentCommNo = 0
 	r := comment.New(dbcomm.GetDB(), comment.DEBUG)
 	l, err := r.GetList(search)
+
 	total, err := r.GetTotal(search)
 	for k, v := range l {
 		if v.UserId != uId {

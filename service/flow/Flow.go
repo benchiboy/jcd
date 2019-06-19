@@ -315,7 +315,7 @@ func (r FlowList) Get(s Search) (*Flow, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,version from b_flow where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,mct_no,mct_trxn_no,trxn_no,trxn_amt,trxn_type,proc_status,proc_msg,account_bal,code_url,prepay_id,trxn_memo,version from b_flow where 1=1 %s order by id desc limit 1", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}

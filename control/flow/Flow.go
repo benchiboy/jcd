@@ -13,11 +13,30 @@ import (
 	"jcd/service/bizcustomer"
 
 	"fmt"
-	//	"jcd/control/payutil"
+	"jcd/control/payutil"
+	"jcd/service/searchlog"
+	syslog "log"
 	"net/http"
 	"strconv"
 	"time"
 )
+
+/*
+	前端查询支付订单的状态
+*/
+type GetOrderReq struct {
+	LoanNo string `json:"loan_no"`
+}
+
+/*
+	返回给前端的支付结果
+*/
+
+type GetOrderResp struct {
+	ErrCode string `json:"err_code"`
+	ErrMsg  string `json:"err_msg"`
+	Status  string `json:"status"`
+}
 
 /*
 	查询输入条件
@@ -56,6 +75,7 @@ type Loan struct {
 	TotalAmt     string `json:"total_amt"`
 	PrincipalAmt string `json:"principal_amt"`
 	IntFeeAmt    string `json:"intfee_amt"`
+	LoanStatus   string `json:"loan_status"`
 }
 
 /*
@@ -195,18 +215,26 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer req.Body.Close()
-
+	log := searchlog.New(dbcomm.GetDB(), searchlog.DEBUG)
+	var logNode searchlog.Searchlog
+	logNode.Ip = req.RemoteAddr
+	logNode.Brower = req.UserAgent()
+	logNode.KeyNo = searchReq.KeyNo
+	logNode.InsertTime = time.Now().Format("2006-01-02 15:04:05")
+	log.InsertEntity(logNode, nil)
 	//验证图形验证码
-	fmt.Println("code==>", searchReq.CapchasCode, "idkey===>", searchReq.IdKey)
 	if !common.CheckCaptchaCode(searchReq.IdKey, searchReq.CapchasCode) {
 		searchResp.ErrCode = common.ERR_CODE_VERIFY
 		searchResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
 		common.Write_Response(searchResp, w, req)
 		return
 	}
-
 	var search bizcustomer.Search
-	search.CertNo = searchReq.KeyNo
+	if len(searchReq.KeyNo) > 11 {
+		search.CertNo = searchReq.KeyNo
+	} else {
+		search.MCardMobile = searchReq.KeyNo
+	}
 	c := bizcustomer.New(dbcomm.GetCCDB(), bizcustomer.DEBUG)
 	l, err := c.GetList(search)
 	for _, v := range l {
@@ -215,6 +243,16 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 		a := bizaccount.New(dbcomm.GetCCDB(), bizaccount.DEBUG)
 		ll, _ := a.GetList(acctSearch)
 		for _, vv := range ll {
+			//如果催收合同还款成功，不进行查询展示
+			fl := flow.New(dbcomm.GetDB(), flow.DEBUG)
+			var flowSearch flow.Search
+			flowSearch.MctTrxnNo = vv.ContractId
+			flowSearch.ProcStatus = common.STATUS_SUCC
+			_, err := fl.Get(flowSearch)
+			if err == nil {
+				syslog.Println(vv.ContractId, "发现支付成功的,跳过")
+				continue
+			}
 			var e Loan
 			e.CertNo = v.CertNo
 			e.MctNo = "CRF01"
@@ -229,23 +267,102 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 			e.TotalAmt = vv.Total
 			e.PrincipalAmt = vv.Pricipal
 			e.PayDate = vv.PayDate
+			e.LoanStatus = "逾期待还"
 			searchResp.LoanList = append(searchResp.LoanList, e)
 		}
 	}
 	searchResp.ErrCode = common.ERR_CODE_SUCCESS
 	searchResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(searchResp, w, req)
+}
 
+/*
+	得到支付订单的状态
+*/
+func OrderStatus(w http.ResponseWriter, r *http.Request) {
+	common.PrintHead("GetOrderStatus")
+	var orderReq GetOrderReq
+	var orderResp GetOrderResp
+	err := json.NewDecoder(r.Body).Decode(&orderReq)
+	if err != nil {
+		orderResp.ErrCode = common.ERR_CODE_JSONERR
+		orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_JSONERR] + "请求报文格式有误！" + err.Error()
+		common.Write_Response(orderResp, w, r)
+		return
+	}
+	defer r.Body.Close()
+	var search flow.Search
+	search.MctTrxnNo = orderReq.LoanNo
+	fw := flow.New(dbcomm.GetDB(), flow.DEBUG)
+	e, err := fw.Get(search)
+	if err != nil {
+		orderResp.ErrCode = common.ERR_CODE_DBERROR
+		orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
+		common.Write_Response(orderResp, w, r)
+		return
+	}
+	//查询微信的支付结果
+	if e.ProcStatus == common.STATUS_DOING {
+		//		returnCode, resultCode, tradeState, _ := payutil.WxOrderQuery(fmt.Sprintf("%d", e.TrxnNo))
+		//		if returnCode == "SUCCESS" && resultCode == "SUCCESS" && tradeState == "SUCCESS" {
+		//			orderResp.ErrCode = common.ERR_CODE_SUCCESS
+		//			orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+		//			orderResp.Status = common.STATUS_SUCC
+		//			common.Write_Response(orderResp, w, r)
+		//			return
+		//		}
+	}
+	orderResp.ErrCode = common.ERR_CODE_SUCCESS
+	orderResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+	orderResp.Status = e.ProcStatus
+	common.Write_Response(orderResp, w, r)
+
+	common.PrintTail("GetOrderStatus")
+}
+
+/*
+	定时查询订单状态
+*/
+func QueryOrder() error {
+	common.PrintHead("QueryOrder")
+	var search flow.Search
+	search.ProcStatus = common.STATUS_DOING
+	search.ExtraWhere = " and trxn_date>=date_sub(now(), interval 2 hour)"
+	fw := flow.New(dbcomm.GetDB(), flow.DEBUG)
+	l, err := fw.GetList(search)
+	if err != nil {
+		return err
+	}
+	for _, v := range l {
+		returnCode, resultCode, tradeState, errMsg := payutil.WxOrderQuery(fmt.Sprintf("%d", v.TrxnNo))
+		if returnCode == "SUCCESS" && resultCode == "SUCCESS" && tradeState == "SUCCESS" {
+			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_SUCC}
+			err = fw.UpdateMap(fmt.Sprintf("%d", v.TrxnNo), flowMap, nil)
+			if err != nil {
+				fmt.Println("更新失败", err)
+			}
+		}
+		if returnCode == "SUCCESS" && resultCode == "FAIL" {
+			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_FAIL,
+				common.FIELD_PROC_MSG: errMsg}
+			err = fw.UpdateMap(fmt.Sprintf("%d", v.TrxnNo), flowMap, nil)
+			if err != nil {
+				fmt.Println("更新失败", err)
+			}
+		}
+	}
+	common.PrintTail("QueryOrder")
+	return nil
 }
 
 /*
 	用户发起还款
 */
 func RepayOrder(w http.ResponseWriter, req *http.Request) {
-	userId, _, _, tokenErr := common.CheckToken(w, req)
-	if tokenErr != nil {
-		return
-	}
+	//	userId, _, _, tokenErr := common.CheckToken(w, req)
+	//	if tokenErr != nil {
+	//		return
+	//	}
 	var repayReq RepayReq
 	var repayResp RepayResp
 	err := json.NewDecoder(req.Body).Decode(&repayReq)
@@ -257,37 +374,31 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 	var qrCode string
-
-	//	qrCode, err = common.CreateQrCode("23232232323232", "weixin://wxpay/bizpayurl?pr=B5GobHj")
-	//	if err != nil {
-	//		fmt.Println(err.Error())
-	//		repayResp.ErrCode = common.ERR_CODE_PAYERR
-	//		repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
-	//		common.Write_Response(repayResp, w, req)
-	//		return
-	//	}
-	//	repayResp.QrCode = qrCode
-	//	repayResp.ErrCode = common.ERR_CODE_SUCCESS
-	//	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
-	//	common.Write_Response(repayResp, w, req)
-	//	return
-
+	//如果1个小时存在未支付的订单，直接返回给用户支付，不用调用微信下单
 	var search flow.Search
 	search.MctNo = repayReq.MctNo
 	search.MctTrxnNo = repayReq.LoanNo
+	search.ExtraWhere = " and trxn_date>=date_sub(now(), interval 1 hour)"
 	r := flow.New(dbcomm.GetDB(), flow.DEBUG)
-	//	if _, err := r.Get(search); err == nil {
-	//		repayResp.ErrCode = common.ERR_CODE_EXISTED
-	//		repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_EXISTED]
-	//		common.Write_Response(repayResp, w, req)
-	//		return
-
-	//	} else {
+	if fe, err := r.Get(search); err == nil {
+		if fe.ProcStatus == common.STATUS_DOING {
+			qrCode, err = common.CreateQrCode(fe.PrepayId, fe.CodeUrl)
+			repayResp.QrCode = qrCode
+			repayResp.ErrCode = common.ERR_CODE_PAYDOING
+			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYDOING]
+			common.Write_Response(repayResp, w, req)
+			return
+		}
+		if fe.ProcStatus == common.STATUS_SUCC {
+			repayResp.ErrCode = common.ERR_CODE_SUCCESS
+			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+			common.Write_Response(repayResp, w, req)
+			return
+		}
+	}
 	var e flow.Flow
 	e.MctNo = repayReq.MctNo
 	e.TrxnAmt = 1
-	uid, _ := strconv.ParseInt(userId, 10, 64)
-	e.UserId = uid
 	e.MctTrxnNo = repayReq.LoanNo
 	e.InsertTime = time.Now().Format("2006-01-02 15:04:05")
 	e.TrxnDate = time.Now().Format("2006-01-02 15:04:05")
@@ -301,7 +412,9 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 	}
 	//prePayId, codeUrl, err := payutil.UnionPayOrder(fmt.Sprintf("%d", e.TrxnNo), e.TrxnAmt)
 	prePayId := fmt.Sprintf("%d", e.TrxnNo)
+	//测试时用
 	codeUrl := "weixin://wxpay/bizpayurl?pr=B5GobHj"
+	//微信下单失败
 	if err != nil {
 		flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_FAIL,
 			common.FIELD_PROC_MSG: err.Error()}
@@ -315,7 +428,6 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 		}
 		common.Write_Response(repayResp, w, req)
 		return
-
 	} else {
 		flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_DOING,
 			common.FIELD_PREPAY_ID: prePayId,
@@ -336,16 +448,16 @@ func RepayOrder(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-
 	repayResp.QrCode = qrCode
-	repayResp.ErrCode = common.ERR_CODE_SUCCESS
-	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+	repayResp.ErrCode = common.ERR_CODE_PAYDOING
+	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYDOING]
 	common.Write_Response(repayResp, w, req)
 }
 
 /*
 	获取用户的还款交易流水
 */
+
 func MyFlowList(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("MyFlowList")
 	userId, _, _, tokenErr := common.CheckToken(w, req)

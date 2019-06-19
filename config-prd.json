@@ -1,6 +1,7 @@
 {
 	"config":{
 		"DB_URL": "root:Pefh/4MDSsZ&l@tcp(localhost:3306)/jcdb",
+"CCDB_URL": "ccms:ccms@tcp(192.168.60.99:3306)/ccms",
 		"LISTEN":8087,
 		"OPEN_CONNS":120,
 		"IDLE_CONNS":120

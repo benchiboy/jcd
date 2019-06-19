@@ -61,6 +61,16 @@ type CheckAccountResp struct {
 /*
 	查询账户是否存在的请求返回
 */
+type CheckSignInResp struct {
+	ErrCode  string `json:"err_code"`
+	ErrMsg   string `json:"err_msg"`
+	NickName string `json:"nick_name"`
+	userId   string `json:"user_id"`
+}
+
+/*
+	查询账户是否存在的请求返回
+*/
 type GetAvatarUrlResp struct {
 	ErrCode string `json:"err_code"`
 	ErrMsg  string `json:"err_msg"`
@@ -106,40 +116,18 @@ type EncryptedDataUserInfo struct {
 */
 
 func CheckSignIn(w http.ResponseWriter, req *http.Request) {
-	common.PrintHead("GetAccount")
-	var accountReq GetAccountReq
-	var accountResp GetAccountResp
-	err := json.NewDecoder(req.Body).Decode(&accountReq)
-	if err != nil {
-		log.Println(err.Error())
+	common.PrintHead("CheckSignIn")
+	userId, _, nickName, tokenErr := common.CheckToken(w, req)
+	if tokenErr != nil {
 		return
 	}
-	defer req.Body.Close()
-	var search account.Search
-	search.UserId = accountReq.UserId
-	r := account.New(dbcomm.GetDB(), account.DEBUG)
-	if e, err := r.Get(search); err == nil {
-		//用户存在，已经登录
-		if e.ExpiresIn > time.Now().Unix() {
-			accountResp.ErrCode = common.ERR_USER_SIGNINED
-			accountResp.ErrMsg = common.ERROR_MAP[common.ERR_USER_SIGNINED]
-			accountResp.NickName = e.NickName
-			accountResp.AvatarUrl = e.AvatarUrl
-			common.Write_Response(accountResp, w, req)
-			return
-			//用户存在，未登录
-		} else {
-			accountResp.ErrCode = common.ERR_USER_UNSIGNIN
-			accountResp.ErrMsg = common.ERROR_MAP[common.ERR_USER_UNSIGNIN] + e.LoginName
-			common.Write_Response(accountResp, w, req)
-			return
-		}
-	}
-	//需要用户注册
-	accountResp.ErrCode = common.ERR_USER_MSTSIGNUP
-	accountResp.ErrMsg = common.ERROR_MAP[common.ERR_USER_MSTSIGNUP]
-	common.Write_Response(accountResp, w, req)
-	common.PrintTail("GetAccount")
+	var signInResp CheckSignInResp
+	signInResp.NickName = nickName
+	signInResp.userId = userId
+	signInResp.ErrCode = common.ERR_CODE_SUCCESS
+	signInResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
+	common.Write_Response(signInResp, w, req)
+	common.PrintTail("CheckSignIn")
 }
 
 /*
