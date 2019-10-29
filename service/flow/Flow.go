@@ -46,6 +46,12 @@ type Search struct {
 	PageSize   int     `json:"page_size"`
 	ExtraWhere string  `json:"extra_where"`
 	SortFld    string  `json:"sort_fld"`
+	CrfUid     string  `json:"crf_uid"`
+	UserName   string  `json:"user_name"`
+	IdNo       string  `json:"id_no"`
+	PhoneNo    string  `json:"phone_no"`
+	CardNo     string  `json:"card_no"`
+	BankId     string  `json:"bank_id"`
 }
 
 type FlowList struct {
@@ -75,6 +81,12 @@ type Flow struct {
 	UpdateTime string  `json:"update_time"`
 	UpdateUser string  `json:"update_user"`
 	Version    int64   `json:"version"`
+	CrfUid     string  `json:"crf_uid"`
+	UserName   string  `json:"user_name"`
+	IdNo       string  `json:"id_no"`
+	PhoneNo    string  `json:"phone_no"`
+	CardNo     string  `json:"card_no"`
+	BankId     string  `json:"bank_id"`
 }
 
 type Form struct {
@@ -859,6 +871,40 @@ func (r FlowList) InsertEntity(p Flow, tr *sql.Tx) error {
 		colNames += "version,"
 		colTags += "?,"
 		valSlice = append(valSlice, p.Version)
+	}
+	if p.CrfUid != "" {
+		colNames += "crf_uid,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.CrfUid)
+	}
+
+	if p.UserName != "" {
+		colNames += "user_name,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.UserName)
+	}
+	if p.IdNo != "" {
+		colNames += "id_no,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.IdNo)
+	}
+
+	if p.CardNo != "" {
+		colNames += "card_no,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.CardNo)
+	}
+
+	if p.PhoneNo != "" {
+		colNames += "phone_no,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.PhoneNo)
+	}
+
+	if p.BankId != "" {
+		colNames += "bank_id,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.BankId)
 	}
 
 	colNames = strings.TrimRight(colNames, ",")

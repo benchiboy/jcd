@@ -34,6 +34,8 @@ type Search struct {
 	LoginMode   int64   `json:"login_mode"`
 	LoginName   string  `json:"login_name"`
 	LoginPass   string  `json:"login_pass"`
+	PassProblem string  `json:"pass_problem"`
+	PassAnswer  string  `json:"pass_answer"`
 	Status      int64   `json:"status"`
 	AvatarUrl   string  `json:"avatar_url"`
 	NickName    string  `json:"nick_name"`
@@ -77,6 +79,8 @@ type Account struct {
 	LoginMode     int64   `json:"login_mode"`
 	LoginName     string  `json:"login_name"`
 	LoginPass     string  `json:"login_pass"`
+	PassProblem   string  `json:"pass_problem"`
+	PassAnswer    string  `json:"pass_answer"`
 	Status        int64   `json:"status"`
 	AvatarUrl     string  `json:"avatar_url"`
 	NickName      string  `json:"nick_name"`
@@ -341,6 +345,14 @@ func (r AccountList) Get(s Search) (*Account, error) {
 		where += " and login_pass='" + s.LoginPass + "'"
 	}
 
+	if s.PassProblem != "" {
+		where += " and pass_problem='" + s.PassProblem + "'"
+	}
+
+	if s.PassAnswer != "" {
+		where += " and pass_answer='" + s.PassAnswer + "'"
+	}
+
 	if s.Status != 0 {
 		where += " and status=" + fmt.Sprintf("%d", s.Status)
 	}
@@ -417,7 +429,7 @@ func (r AccountList) Get(s Search) (*Account, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select id,user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,memo,version from b_account where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select id,user_id,puser_id,punion_id,psession_key,access_token,expires_in,jwt_token,login_mode,login_name,login_pass,pass_problem,pass_answer,status,avatar_url,nick_name,mail,gender,phone,city,province,country,language,errors,account_bal,market,random_no,memo,version from b_account where 1=1 %s ", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -432,7 +444,7 @@ func (r AccountList) Get(s Search) (*Account, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.Id, &p.UserId, &p.PuserId, &p.PunionId, &p.PsessionKey, &p.AccessToken, &p.ExpiresIn, &p.JwtToken, &p.LoginMode, &p.LoginName, &p.LoginPass, &p.Status, &p.AvatarUrl, &p.NickName, &p.Mail, &p.Gender, &p.Phone, &p.City, &p.Province, &p.Country, &p.Language, &p.Errors, &p.AccountBal, &p.Market, &p.RandomNo, &p.Memo, &p.Version)
+		err := rows.Scan(&p.Id, &p.UserId, &p.PuserId, &p.PunionId, &p.PsessionKey, &p.AccessToken, &p.ExpiresIn, &p.JwtToken, &p.LoginMode, &p.LoginName, &p.LoginPass, &p.PassProblem, &p.PassAnswer, &p.Status, &p.AvatarUrl, &p.NickName, &p.Mail, &p.Gender, &p.Phone, &p.City, &p.Province, &p.Country, &p.Language, &p.Errors, &p.AccountBal, &p.Market, &p.RandomNo, &p.Memo, &p.Version)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -1047,6 +1059,18 @@ func (r AccountList) InsertEntity(p Account, tr *sql.Tx) error {
 		valSlice = append(valSlice, p.LoginPass)
 	}
 
+	if p.PassProblem != "" {
+		colNames += "pass_problem,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.PassProblem)
+	}
+
+	if p.PassAnswer != "" {
+		colNames += "pass_answer,"
+		colTags += "?,"
+		valSlice = append(valSlice, p.PassAnswer)
+	}
+
 	if p.Status != 0 {
 		colNames += "status,"
 		colTags += "?,"
@@ -1319,6 +1343,16 @@ func (r AccountList) UpdataEntity(keyNo string, p Account, tr *sql.Tx) error {
 		colNames += "login_pass=?,"
 
 		valSlice = append(valSlice, p.LoginPass)
+	}
+
+	if p.PassProblem != "" {
+		colNames += "pass_problem=?,"
+		valSlice = append(valSlice, p.PassProblem)
+	}
+
+	if p.PassAnswer != "" {
+		colNames += "pass_answer=?,"
+		valSlice = append(valSlice, p.PassAnswer)
 	}
 
 	if p.Status != 0 {

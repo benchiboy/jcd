@@ -60,6 +60,7 @@ type Account struct {
 	PayDate     string `json:"open_acct_date"`
 	Total       string `json:"last_cyc_stmt_bal"`
 	OverdueDays string `json:"delinquent_days"`
+	LoanDays    string `json:"loan_days"`
 	UpdateDate  string `json:"stra_upd_date"`
 	DueDate     string `json:"statement_day"`
 }
@@ -116,7 +117,7 @@ func (r *AccountList) GetTotal(s Search) (int, error) {
 		where += s.ExtraWhere
 	}
 
-	qrySql := fmt.Sprintf("Select count(1) as total from tbl_ccms_biz_cust_customer   where 1=1 %s", where)
+	qrySql := fmt.Sprintf("Select count(1) as total from act_mv_borrower   where 1=1 %s", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -136,58 +137,6 @@ func (r *AccountList) GetTotal(s Search) (int, error) {
 	return total, nil
 }
 
-/*
-	说明：根据主键查询符合条件的条数
-	入参：s: 查询条件
-	出参：参数1：返回符合条件的对象, 参数2：如果错误返回错误对象
-*/
-
-//func (r AccountList) Get(s Search) (*Account, error) {
-//	var where string
-//	l := time.Now()
-
-//	if s.ExtraWhere != "" {
-//		where += s.ExtraWhere
-//	}
-
-//	if s.AcctNo != "" {
-//		where += s.AcctNo
-//	}
-
-//	qrySql := fmt.Sprintf("Select crfuid,acct_no,system_id, delinquent_principal,delinquent_fine,loan_capital, open_acct_date,expense_amt,last_cyc_stmt_bal,delinquent_days,stmt_interest_bal,stra_upd_date,statement_day   from tbl_ccms_biz_cust_customer where 1=1 %s ", where)
-//	if r.Level == DEBUG {
-//		log.Println(SQL_SELECT, qrySql)
-//	}
-//	rows, err := r.DB.Query(qrySql)
-//	if err != nil {
-//		log.Println(SQL_ERROR, err.Error())
-//		return nil, err
-//	}
-//	defer rows.Close()
-
-//	var p Account
-//	if !rows.Next() {
-//		return nil, fmt.Errorf("Not Finded Record")
-//	} else {
-//		err := rows.Scan(&p.CrfUid, &p.ContractId, &p.SystemId, &p.Pricipal, &p.Fee, &p.LoanCapital, &p.PayDate, &p.Penalty, &p.Total, &p.OverdueDays, &p.Interest, &p.UpdateDate, &p.DueDate)
-//		if err != nil {
-//			log.Println(SQL_ERROR, err.Error())
-//			return nil, err
-//		}
-//	}
-//	log.Println(SQL_ELAPSED, r)
-//	if r.Level == DEBUG {
-//		log.Println(SQL_ELAPSED, time.Since(l))
-//	}
-//	return &p, nil
-//}
-
-/*
-	说明：根据条件查询复核条件对象列表，支持分页查询
-	入参：s: 查询条件
-	出参：参数1：返回符合条件的对象列表, 参数2：如果错误返回错误对象
-*/
-
 func (r *AccountList) GetList(s Search) ([]Account, error) {
 	var where string
 	l := time.Now()
@@ -196,15 +145,12 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 		where += s.ExtraWhere
 	}
 	if s.CrfUid != "" {
-		where += " and crfuid='" + fmt.Sprintf("%s'", s.CrfUid)
+		where += " and crf_uid='" + fmt.Sprintf("%s'", s.CrfUid)
 	}
 
 	var qrySql string
-	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select crfuid,acct_no,system_id, delinquent_principal,(delinquent_fine+expense_amt+stmt_interest_bal) as intfee,loan_capital, open_acct_date,last_cyc_stmt_bal,delinquent_days ,date(statement_day) from tbl_ccms_biz_acct_account where 1=1 %s", where)
-	} else {
-		qrySql = fmt.Sprintf("Select crfuid,acct_no,system_id, delinquent_principal,(delinquent_fine+expense_amt+stmt_interest_bal) as intfee ,loan_capital, open_acct_date,last_cyc_stmt_bal,delinquent_days,date(statement_day) from tbl_ccms_biz_acct_account where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
-	}
+	qrySql = fmt.Sprintf("SELECT crf_uid,loan_no,mct_no,principal_amt,fee_amt+int_amt+penalty_amt as intfee,pay_amt,pay_date,principal_amt+int_amt+fee_amt+penalty_amt AS total_amt ,datediff(now(),curr_bill_date) as overdue_days,curr_bill_date,loan_periods FROM act_mv_loan_info  where 1=1 %s", where)
+
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -217,7 +163,7 @@ func (r *AccountList) GetList(s Search) ([]Account, error) {
 
 	var p Account
 	for rows.Next() {
-		err := rows.Scan(&p.CrfUid, &p.ContractId, &p.SystemId, &p.Pricipal, &p.IntFeeAmt, &p.LoanCapital, &p.PayDate, &p.Total, &p.OverdueDays, &p.DueDate)
+		err := rows.Scan(&p.CrfUid, &p.ContractId, &p.SystemId, &p.Pricipal, &p.IntFeeAmt, &p.LoanCapital, &p.PayDate, &p.Total, &p.OverdueDays, &p.DueDate, &p.LoanDays)
 		fmt.Println(err)
 		r.Account = append(r.Account, p)
 	}

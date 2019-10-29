@@ -23,24 +23,25 @@ import (
 	查询账户请求
 */
 type GetAccountReq struct {
-	UserId int64 `json:"user_id"`
+	LoginName string `json:"login_name"`
 }
 
 /*
 	查询账户返回
 */
 type GetAccountResp struct {
-	ErrCode    string  `json:"err_code"`
-	ErrMsg     string  `json:"err_msg"`
-	NickName   string  `json:"nick_name"`
-	AvatarUrl  string  `json:"avatar_url"`
-	Mail       string  `json:"mail"`
-	Phone      string  `json:"phone"`
-	Gender     int     `json:"gender"`
-	AccountBal float64 `json:"account_bal"`
-	Country    string  `json:"country"`
-	Province   string  `json:"province"`
-	City       string  `json:"city"`
+	ErrCode     string  `json:"err_code"`
+	ErrMsg      string  `json:"err_msg"`
+	NickName    string  `json:"nick_name"`
+	AvatarUrl   string  `json:"avatar_url"`
+	Mail        string  `json:"mail"`
+	Phone       string  `json:"phone"`
+	Gender      int     `json:"gender"`
+	AccountBal  float64 `json:"account_bal"`
+	Country     string  `json:"country"`
+	Province    string  `json:"province"`
+	City        string  `json:"city"`
+	PassProblem string  `json:"pass_problem"`
 }
 
 /*
@@ -80,10 +81,13 @@ type GetAvatarUrlResp struct {
 	注册请求
 */
 type SignUpReq struct {
-	NickName string `json:"nick_name"`
-	UserName string `json:"login_name"`
-	PassWord string `json:"login_pass"`
-	SmsCode  string `json:"sms_code"`
+	NickName    string `json:"nick_name"`
+	UserName    string `json:"login_name"`
+	PassWord    string `json:"login_pass"`
+	SmsCode     string `json:"sms_code"`
+	PassProblem string `json:"pass_problem"`
+	PassAnswer  string `json:"pass_answer"`
+	HeadImage   string `json:"head_image"`
 }
 
 /*
@@ -168,14 +172,23 @@ func GetAccount(w http.ResponseWriter, req *http.Request) {
 
 func GetAccountInfo(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("GetAccountInfo")
-	userId, _, _, tokenErr := common.CheckToken(w, req)
-	if tokenErr != nil {
+	//	userId, _, _, tokenErr := common.CheckToken(w, req)
+	//	if tokenErr != nil {
+	//		return
+	//	}
+	//	uId, _ := strconv.ParseInt(userId, 10, 64)
+
+	var accountReq GetAccountReq
+	var accountResp GetAccountResp
+	err := json.NewDecoder(req.Body).Decode(&accountReq)
+	if err != nil {
+		log.Println(err.Error())
 		return
 	}
-	uId, _ := strconv.ParseInt(userId, 10, 64)
-	var accountResp GetAccountResp
+	defer req.Body.Close()
+	log.Println(accountReq)
 	var search account.Search
-	search.UserId = uId
+	search.LoginName = accountReq.LoginName
 	r := account.New(dbcomm.GetDB(), account.DEBUG)
 	if e, err := r.Get(search); err == nil {
 		accountResp.ErrCode = common.CODE_SUCC
@@ -189,6 +202,7 @@ func GetAccountInfo(w http.ResponseWriter, req *http.Request) {
 		accountResp.Country = e.Country
 		accountResp.Province = e.Province
 		accountResp.City = e.City
+		accountResp.PassProblem = e.PassProblem
 
 		common.Write_Response(accountResp, w, req)
 		return
@@ -223,18 +237,19 @@ func SignUp(w http.ResponseWriter, req *http.Request) {
 		return
 
 	} else {
-		if err := common.CheckSmsCode(signupReq.UserName, signupReq.SmsCode); err != nil {
-			signupResp.ErrCode = common.ERR_CODE_VERIFY
-			signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
-			common.Write_Response(signupResp, w, req)
-			return
-		}
+		//		if err := common.CheckSmsCode(signupReq.UserName, signupReq.SmsCode); err != nil {
+		//			signupResp.ErrCode = common.ERR_CODE_VERIFY
+		//			signupResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+		//			common.Write_Response(signupResp, w, req)
+		//			return
+		//		}
 		var e account.Account
 		e.LoginMode = common.LOGIN_PHONE
-		e.NickName = signupReq.NickName
 		e.LoginName = signupReq.UserName
 		e.LoginPass = signupReq.PassWord
-		e.Phone = signupReq.UserName
+		e.PassProblem = signupReq.PassProblem
+		e.PassAnswer = signupReq.PassAnswer
+		e.AvatarUrl = signupReq.HeadImage
 		e.UserId = time.Now().Unix()
 		e.CreatedTime = time.Now().Format("2006-01-02 15:04:05")
 		r.InsertEntity(e, nil)

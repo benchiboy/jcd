@@ -30,6 +30,9 @@ var (
 	WX_PAY_URL   = "https://api.mch.weixin.qq.com/pay/unifiedorder"
 	WX_QUERY_URL = "https://api.mch.weixin.qq.com/pay/orderquery"
 
+	CPCN_QUERY_URL = "http://192.168.70.180:8080/fcp2intra/light/life/query?data="
+	CPCN_PAY_URL   = "http://192.168.70.180:8080/fcp2intra/light/life?data="
+
 	WX_PAY_CALLBACK_URL = "http://www.doulaikan.club/jc/api/wxpaycallback"
 	MCT_ID              = "1452819402"
 	APP_ID              = "wx2db791be2eb77467"

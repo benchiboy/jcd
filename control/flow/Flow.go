@@ -76,6 +76,8 @@ type Loan struct {
 	PrincipalAmt string `json:"principal_amt"`
 	IntFeeAmt    string `json:"intfee_amt"`
 	LoanStatus   string `json:"loan_status"`
+	CrfUid       string `json:"crf_uid"`
+	BankCardNo   string `json:"bank_card_no"`
 }
 
 /*
@@ -85,7 +87,14 @@ type RepayReq struct {
 	MctNo     string `json:"mct_no"`
 	TradeType string `json:"trade_type"`
 	LoanNo    string `json:"loan_no"`
-	RepayAmt  string `json:"repay_amt"`
+	CrfUid    string `json:"crf_uid"`
+	IdNo      string `json:"id_no"`
+	UserName  string `json:"user_name"`
+	BankId    string `json:"bank_id"`
+	PhoneNo   string `json:"phone_no"`
+	CardNo    string `json:"card_no"`
+
+	RepayAmt string `json:"repay_amt"`
 }
 
 /*
@@ -93,6 +102,7 @@ type RepayReq struct {
 */
 type RepayResp struct {
 	QrCode  string `json:"qr_code"`
+	TrxnNo  string `json:"trxn_no"`
 	ErrCode string `json:"err_code"`
 	ErrMsg  string `json:"err_msg"`
 }
@@ -223,12 +233,12 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 	logNode.InsertTime = time.Now().Format("2006-01-02 15:04:05")
 	log.InsertEntity(logNode, nil)
 	//验证图形验证码
-	if !common.CheckCaptchaCode(searchReq.IdKey, searchReq.CapchasCode) {
-		searchResp.ErrCode = common.ERR_CODE_VERIFY
-		searchResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
-		common.Write_Response(searchResp, w, req)
-		return
-	}
+	//	if !common.CheckCaptchaCode(searchReq.IdKey, searchReq.CapchasCode) {
+	//		searchResp.ErrCode = common.ERR_CODE_VERIFY
+	//		searchResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_VERIFY]
+	//		common.Write_Response(searchResp, w, req)
+	//		return
+	//	}
 	var search bizcustomer.Search
 	if len(searchReq.KeyNo) > 11 {
 		search.CertNo = searchReq.KeyNo
@@ -239,6 +249,7 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 	l, err := c.GetList(search)
 	for _, v := range l {
 		var acctSearch bizaccount.Search
+		fmt.Println(v.CrfUid)
 		acctSearch.CrfUid = v.CrfUid
 		a := bizaccount.New(dbcomm.GetCCDB(), bizaccount.DEBUG)
 		ll, _ := a.GetList(acctSearch)
@@ -262,16 +273,21 @@ func FindLoans(w http.ResponseWriter, req *http.Request) {
 			e.LoanNo = vv.ContractId
 			e.PayAmt = vv.LoanCapital
 			e.DueDate = vv.DueDate
+			e.LoanDay = vv.LoanDays
 			e.IntFeeAmt = vv.IntFeeAmt
 			e.OverdueDay = vv.OverdueDays
 			e.TotalAmt = vv.Total
 			e.PrincipalAmt = vv.Pricipal
 			e.PayDate = vv.PayDate
 			e.LoanStatus = "逾期待还"
+			e.CrfUid = v.CrfUid
+			e.BankCardNo = v.BankCardNo
 			searchResp.LoanList = append(searchResp.LoanList, e)
 		}
+		break
 	}
 	searchResp.ErrCode = common.ERR_CODE_SUCCESS
+	searchResp.Total = len(l)
 	searchResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(searchResp, w, req)
 }
@@ -323,6 +339,41 @@ func OrderStatus(w http.ResponseWriter, r *http.Request) {
 /*
 	定时查询订单状态
 */
+func CPCNQueryOrder() error {
+	common.PrintHead("QueryOrder")
+	var search flow.Search
+	search.ProcStatus = common.STATUS_DOING
+	search.ExtraWhere = " and trxn_date>=date_sub(now(), interval 2 hour)"
+	fw := flow.New(dbcomm.GetDB(), flow.DEBUG)
+	l, err := fw.GetList(search)
+	if err != nil {
+		return err
+	}
+	for _, v := range l {
+		returnCode, resultCode, tradeState, errMsg := payutil.WxOrderQuery(fmt.Sprintf("%d", v.TrxnNo))
+		if returnCode == "SUCCESS" && resultCode == "SUCCESS" && tradeState == "SUCCESS" {
+			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_SUCC}
+			err = fw.UpdateMap(fmt.Sprintf("%d", v.TrxnNo), flowMap, nil)
+			if err != nil {
+				fmt.Println("更新失败", err)
+			}
+		}
+		if returnCode == "SUCCESS" && resultCode == "FAIL" {
+			flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_FAIL,
+				common.FIELD_PROC_MSG: errMsg}
+			err = fw.UpdateMap(fmt.Sprintf("%d", v.TrxnNo), flowMap, nil)
+			if err != nil {
+				fmt.Println("更新失败", err)
+			}
+		}
+	}
+	common.PrintTail("QueryOrder")
+	return nil
+}
+
+/*
+	定时查询订单状态
+*/
 func QueryOrder() error {
 	common.PrintHead("QueryOrder")
 	var search flow.Search
@@ -356,13 +407,76 @@ func QueryOrder() error {
 }
 
 /*
+	用户发起还款--中金支付
+*/
+func CPCNRepayOrder(w http.ResponseWriter, req *http.Request) {
+	var repayReq RepayReq
+	var repayResp RepayResp
+	err := json.NewDecoder(req.Body).Decode(&repayReq)
+	if err != nil {
+		repayResp.ErrCode = common.ERR_CODE_JSONERR
+		repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_JSONERR] + "请求报文格式有误！" + err.Error()
+		common.Write_Response(repayResp, w, req)
+		return
+	}
+	defer req.Body.Close()
+	r := flow.New(dbcomm.GetDB(), flow.DEBUG)
+	var e flow.Flow
+	e.MctNo = repayReq.MctNo
+	e.TrxnAmt = 1
+	e.MctTrxnNo = repayReq.LoanNo
+	e.CrfUid = repayReq.CrfUid
+	e.IdNo = repayReq.IdNo
+	e.UserName = repayReq.UserName
+	e.PhoneNo = repayReq.PhoneNo
+	e.CardNo = repayReq.CardNo
+	e.BankId = repayReq.BankId
+	e.InsertTime = time.Now().Format("2006-01-02 15:04:05")
+	e.TrxnDate = time.Now().Format("2006-01-02 15:04:05")
+	e.TrxnNo = time.Now().UnixNano()
+	e.ProcStatus = common.STATUS_INIT
+	if err := r.InsertEntity(e, nil); err != nil {
+		repayResp.ErrCode = common.ERR_CODE_DBERROR
+		repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
+		common.Write_Response(repayResp, w, req)
+		return
+	}
+	trxnNo, retCode, err := payutil.CPCNPayOrder(e.BankId, e.CrfUid, e.UserName,
+		e.IdNo, e.CardNo, fmt.Sprintf("%d", e.TrxnNo), e.PhoneNo, e.TrxnAmt)
+	fmt.Println("=========>", err, retCode)
+	if err != nil {
+		flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_FAIL,
+			common.FIELD_PROC_MSG: err.Error()}
+		dberr := r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+		if dberr != nil {
+			repayResp.ErrCode = common.ERR_CODE_DBERROR
+			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_DBERROR]
+		} else {
+			repayResp.ErrCode = retCode
+			repayResp.ErrMsg = err.Error()
+		}
+		common.Write_Response(repayResp, w, req)
+		return
+	} else {
+		flowMap := map[string]interface{}{common.FIELD_PROC_STATUS: common.STATUS_DOING}
+		err = r.UpdateMap(fmt.Sprintf("%d", e.TrxnNo), flowMap, nil)
+		if err != nil {
+			repayResp.ErrCode = common.ERR_CODE_DBERROR
+			repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYERR]
+			common.Write_Response(repayResp, w, req)
+			return
+		}
+	}
+	repayResp.TrxnNo = trxnNo
+	repayResp.ErrCode = common.ERR_CODE_PAYDOING
+	repayResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_PAYDOING]
+	common.Write_Response(repayResp, w, req)
+}
+
+/*
 	用户发起还款
 */
 func RepayOrder(w http.ResponseWriter, req *http.Request) {
-	//	userId, _, _, tokenErr := common.CheckToken(w, req)
-	//	if tokenErr != nil {
-	//		return
-	//	}
 	var repayReq RepayReq
 	var repayResp RepayResp
 	err := json.NewDecoder(req.Body).Decode(&repayReq)

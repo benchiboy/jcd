@@ -207,11 +207,12 @@ func MyCommentList(w http.ResponseWriter, req *http.Request) {
 
 func CommentPost(w http.ResponseWriter, req *http.Request) {
 	common.PrintHead("CommentPost")
-	userId, _, nickName, tokenErr := common.CheckToken(w, req)
-	if tokenErr != nil {
-		return
-	}
-	uId, _ := strconv.ParseInt(userId, 10, 64)
+	/*	userId, _, nickName, tokenErr := common.CheckToken(w, req)
+		if tokenErr != nil {
+			return
+		}
+		uId, _ := strconv.ParseInt(userId, 10, 64)
+	*/
 	var postReq CommentPostReq
 	var postResp CommentPostResp
 	err := json.NewDecoder(req.Body).Decode(&postReq)
@@ -225,7 +226,7 @@ func CommentPost(w http.ResponseWriter, req *http.Request) {
 	r := comment.New(dbcomm.GetDB(), comment.DEBUG)
 
 	var e comment.Comment
-	e.UserId = uId
+	e.UserId = 10000
 	commNo := time.Now().UnixNano()
 	e.CommNo = commNo
 	e.Likes = common.COMMENT_INIT_VALUE
@@ -240,7 +241,7 @@ func CommentPost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	postResp.CommNo = commNo
-	postResp.NickName = nickName
+	//	postResp.NickName = nickName
 	postResp.ErrCode = common.ERR_CODE_SUCCESS
 	postResp.ErrMsg = common.ERROR_MAP[common.ERR_CODE_SUCCESS]
 	common.Write_Response(postResp, w, req)

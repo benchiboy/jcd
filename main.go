@@ -75,6 +75,7 @@ func go_WebServer() {
 	http.HandleFunc("/jc/api/wxpaycallback", payutil.WxpayCallback)
 	http.HandleFunc("/jc/api/findloan", flow.FindLoans)
 	http.HandleFunc("/jc/api/repay", flow.RepayOrder)
+	http.HandleFunc("/jc/api/cpcnrepay", flow.CPCNRepayOrder)
 	http.HandleFunc("/jc/api/myflowlist", flow.MyFlowList)
 	http.HandleFunc("/jc/api/myfeedbacklist", flow.MyFeedbackList)
 	http.HandleFunc("/jc/api/orderquery", flow.OrderStatus)
@@ -135,45 +136,6 @@ func init() {
 
 func main() {
 	dbcomm.InitDB(dbUrl, ccdbUrl, idleConns, openConns)
-	go func() {
-		//sch := util.New_Schdule()
-		//		sch.Add_TaskFunc(1001, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-01", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1002, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-10", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1003, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-20", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1004, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-30", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1005, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-40", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1006, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-50", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1007, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-05", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1008, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-15", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1009, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-25", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1010, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-35", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1011, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-45", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Add_TaskFunc(1012, "微信订单查询", false, "YYYY-MM-DD-W-HH-MI-55", func(taskId int) {
-		//			flow.QueryOrder()
-		//		})
-		//		sch.Run()
-	}()
+
 	go_WebServer()
 }

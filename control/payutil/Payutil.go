@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,50 @@ import (
 	"strings"
 	"time"
 )
+
+//首先定义一个UnifyOrderReq用于填入我们要传入的参数。
+type CPCNPayReq struct {
+	RequestRefNo         string `json:"requestRefNo"`
+	BusinessType         string `json:"businessType"`
+	PlatformUserNo       string `json:"platformUserNo"`
+	Amount               int    `json:"amount"`
+	BankId               string `json:"bankId"`
+	AccountType          string `json:"accountType"`
+	AccountName          string `json:"accountName"`
+	AccountNumber        string `json:"accountNumber"`
+	IdentificationType   string `json:"identificationType"`
+	IdentificationNumber string `json:"identificationNumber"`
+	PhoneNumber          string `json:"phoneNumber"`
+	Remarks              string `json:"remarks"`
+}
+
+//首先定义一个UnifyOrderReq用于填入我们要传入的参数。
+type CPCNPayReqResp struct {
+	Result       string `json:"result"`
+	FailCode     string `json:"failCode"`
+	FailReason   string `json:"failReason"`
+	FcpTrxNo     string `json:"fcpTrxNo"`
+	RequestRefNo string `json:"requestRefNo"`
+	Amount       int64  `json:"amount"`
+	SettleData   string `json:"settleDate"`
+}
+
+//首先定义一个UnifyOrderReq用于填入我们要传入的参数。
+type CPCNPayQueryReq struct {
+	RequestRefNo string `json:"requestRefNo"`
+	BusinessType string `json:"businessType"`
+}
+
+//首先定义一个UnifyOrderReq用于填入我们要传入的参数。
+type CPCNPayQueryReqResp struct {
+	Result       string `json:"result"`
+	FailCode     string `json:"failCode"`
+	FailReason   string `json:"failReason"`
+	FcpTrxNo     string `json:"fcpTrxNo"`
+	RequestRefNo string `json:"requestRefNo"`
+	Amount       int64  `json:"amount"`
+	SettleData   string `json:"settleDate"`
+}
 
 //首先定义一个UnifyOrderReq用于填入我们要传入的参数。
 type UnifyOrderReq struct {
@@ -171,30 +216,30 @@ func UnionPayOrder(mctTrxnNo string, totalFee int) (string, string, error) {
 	fmt.Println(string(bytes_req))
 	//发送unified order请求.
 
-	req, err := http.NewRequest("POST", common.WX_PAY_URL, bytes.NewReader(bytes_req))
-	if err != nil {
-		fmt.Println("New Http Request发生错误，原因:", err)
-		return common.EMPTY_STRING, common.EMPTY_STRING, err
-	}
-	req.Header.Set("Accept", "application/xml")
-	req.Header.Set("Content-Type", "application/xml;charset=utf-8")
-	c := http.Client{}
-	resp, _err := c.Do(req)
-	if _err != nil {
-		fmt.Println("请求微信支付统一下单接口发送错误, 原因:", _err)
-		return common.EMPTY_STRING, common.EMPTY_STRING, err
-	}
-	fmt.Println(resp)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err.Error())
-		return common.EMPTY_STRING, common.EMPTY_STRING, err
-	}
-	fmt.Println("WxPay Body:", string(body))
+	//	req, err := http.NewRequest("POST", common.WX_PAY_URL, bytes.NewReader(bytes_req))
+	//	if err != nil {
+	//		fmt.Println("New Http Request发生错误，原因:", err)
+	//		return common.EMPTY_STRING, common.EMPTY_STRING, err
+	//	}
+	//	req.Header.Set("Accept", "application/xml")
+	//	req.Header.Set("Content-Type", "application/xml;charset=utf-8")
+	//	c := http.Client{}
+	//	resp, _err := c.Do(req)
+	//	if _err != nil {
+	//		fmt.Println("请求微信支付统一下单接口发送错误, 原因:", _err)
+	//		return common.EMPTY_STRING, common.EMPTY_STRING, err
+	//	}
+	//	fmt.Println(resp)
+	//	defer resp.Body.Close()
+	//	body, err := ioutil.ReadAll(resp.Body)
+	//	if err != nil {
+	//		fmt.Println(err.Error())
+	//		return common.EMPTY_STRING, common.EMPTY_STRING, err
+	//	}
+	//	fmt.Println("WxPay Body:", string(body))
 	var uniResp UnifyOrderResp
-	err = xml.Unmarshal(body, &uniResp)
-	fmt.Println("=====================>", uniResp.Code_url)
+	//	err = xml.Unmarshal(body, &uniResp)
+	//	fmt.Println("=====================>", uniResp.Code_url)
 	common.PrintTail("UnionPayOrder")
 	return uniResp.Prepay_id, uniResp.Code_url, nil
 }
@@ -336,4 +381,104 @@ func WxpayCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	w.(http.ResponseWriter).WriteHeader(http.StatusOK)
 	fmt.Fprint(w.(http.ResponseWriter), strResp)
+}
+
+func CPCNPayOrder(bankId string, crfUid string, fullName string, idNo string, cardNo string,
+	mctTrxnNo string, phone string, totalFee int) (string, string, error) {
+	common.PrintHead("CPCNPayOrder")
+	var orderReq CPCNPayReq
+	orderReq.RequestRefNo = mctTrxnNo
+	orderReq.AccountName = fullName
+	orderReq.AccountNumber = cardNo
+	orderReq.Amount = totalFee
+	orderReq.BusinessType = "rcs"
+	orderReq.IdentificationNumber = idNo
+	orderReq.IdentificationType = "identitycard"
+	orderReq.PhoneNumber = phone
+	orderReq.PlatformUserNo = crfUid
+	orderReq.AccountType = "personage"
+	orderReq.BankId = bankId
+	orderReq.Remarks = "rcs-app-还款"
+	bytes_req, err := json.Marshal(orderReq)
+	if err != nil {
+		fmt.Println("以xml形式编码发送错误, 原因:", err)
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	str_req := string(bytes_req)
+	URL := common.CPCN_PAY_URL + str_req
+	fmt.Println(URL)
+	req, err := http.NewRequest("GET", URL, nil)
+	if err != nil {
+		fmt.Println("New Http Request发生错误，原因:", err)
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	c := http.Client{}
+	resp, _err := c.Do(req)
+	if _err != nil {
+		fmt.Println("请求微信支付统一下单接口发送错误, 原因:", _err)
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err.Error())
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	fmt.Println("CPCN-Pay Body:", string(body))
+	var uniResp CPCNPayReqResp
+	json.Unmarshal(body, &uniResp)
+	fmt.Println(uniResp.FailReason)
+	if uniResp.Result != "SUCCESS" {
+		failReason := ""
+		if uniResp.FailCode == "card1002" {
+			failReason = "你的银行卡不是选择的银行的"
+		}
+		return mctTrxnNo, uniResp.FailCode, fmt.Errorf(failReason)
+	}
+	common.PrintTail("UnionPayOrder")
+	return mctTrxnNo, uniResp.FailCode, nil
+}
+
+func CPCNPayQueryOrder(mctTrxnNo string) (string, string, error) {
+	common.PrintHead("CPCNPayQueryOrder")
+	var orderReq CPCNPayQueryReq
+	orderReq.RequestRefNo = mctTrxnNo
+	orderReq.BusinessType = "rcs"
+	bytes_req, err := json.Marshal(orderReq)
+	if err != nil {
+		fmt.Println("以xml形式编码发送错误, 原因:", err)
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	str_req := string(bytes_req)
+	URL := common.CPCN_QUERY_URL + str_req
+	req, err := http.NewRequest("GET", URL, nil)
+	if err != nil {
+		fmt.Println("New Http Request发生错误，原因:", err)
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/xml;charset=utf-8")
+	c := http.Client{}
+	resp, _err := c.Do(req)
+	if _err != nil {
+		fmt.Println("请求微信支付统一下单接口发送错误, 原因:", _err)
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err.Error())
+		return mctTrxnNo, common.EMPTY_STRING, err
+	}
+	fmt.Println("CPCN-Pay Body:", string(body))
+	var uniResp CPCNPayReqResp
+	json.Unmarshal(body, &uniResp)
+	fmt.Println(uniResp.FailReason)
+	if uniResp.Result != "SUCCESS" {
+		fmt.Println("!=========")
+		return mctTrxnNo, uniResp.FailCode, fmt.Errorf("222222")
+	}
+	common.PrintTail("UnionPayOrder")
+	return mctTrxnNo, uniResp.FailCode, nil
 }

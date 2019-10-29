@@ -21,14 +21,10 @@ const (
 )
 
 type Search struct {
-	CrfUid             string `json:"crf_uid"`
-	ContractId         string `json:"contract_id"`
-	CertNo             string `json:"cert_no"`
-	CustName           string `json:"cust_name"`
-	MCardMobile        string `json:"mcard_mobile"`
-	MContractAddr      string `json:"main_contract_addr"`
-	UrgentLinkManName  string `json:"urgent_linkman_name"`
-	UrgentLinkManPhone string `json:"urgent_linkman_phone"`
+	CrfUid      string `json:"crf_uid"`
+	CertNo      string `json:"cert_no"`
+	CustName    string `json:"cust_name"`
+	MCardMobile string `json:"mcard_mobile"`
 
 	PageNo     int    `json:"page_no"`
 	PageSize   int    `json:"page_size"`
@@ -49,6 +45,7 @@ type Customer struct {
 	CertNo             string `json:"cert_no"`
 	CustName           string `json:"cust_name"`
 	MCardMobile        string `json:"mcard_mobile"`
+	BankCardNo         string `json:"bank_card_no"`
 	MainContactAddr    string `json:"main_contact_addr"`
 	UrgentLinkManName  string `json:"urgent_linkman_name"`
 	UrgentLinkManPhone string `json:"urgent_linkman_phone"`
@@ -118,7 +115,7 @@ func (r *CustomerList) GetTotal(s Search) (int, error) {
 		where += s.MCardMobile
 	}
 
-	qrySql := fmt.Sprintf("Select count(1) as total from tbl_ccms_biz_cust_customer   where 1=1 %s", where)
+	qrySql := fmt.Sprintf("Select count(1) as total from act_mv_borrower   where 1=1 %s", where)
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -164,7 +161,7 @@ func (r CustomerList) Get(s Search) (*Customer, error) {
 		where += s.MCardMobile
 	}
 
-	qrySql := fmt.Sprintf("Select crfuid,contract_id,cert_no,cust_name,mcard_mobile,main_contact_addr,urgent_linkman_name,urgent_linkman_phone   from tbl_ccms_biz_cust_customer where 1=1 %s ", where)
+	qrySql := fmt.Sprintf("Select crfuid,,user_id_no,full_name,user_mobile,user_card_no  from act_mv_borrower where 1=1 %s ", where)
 
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
@@ -180,7 +177,7 @@ func (r CustomerList) Get(s Search) (*Customer, error) {
 	if !rows.Next() {
 		return nil, fmt.Errorf("Not Finded Record")
 	} else {
-		err := rows.Scan(&p.CrfUid, &p.ContractId, &p.CertNo, &p.CustName, &p.MCardMobile, &p.MainContactAddr, &p.UrgentLinkManName, &p.UrgentLinkManPhone)
+		err := rows.Scan(&p.CrfUid, &p.CertNo, &p.CustName, &p.MCardMobile, &p.BankCardNo)
 		if err != nil {
 			log.Println(SQL_ERROR, err.Error())
 			return nil, err
@@ -207,23 +204,19 @@ func (r *CustomerList) GetList(s Search) ([]Customer, error) {
 		where += s.ExtraWhere
 	}
 	if s.CustName != "" {
-		where += " and cust_name='" + fmt.Sprintf("%s'", s.CustName)
+		where += " and full_name='" + fmt.Sprintf("%s'", s.CustName)
 	}
 
 	if s.CertNo != "" {
-		where += " and cert_no='" + fmt.Sprintf("%s'", s.CertNo)
+		where += " and user_id_no='" + fmt.Sprintf("%s'", s.CertNo)
 	}
 
 	if s.MCardMobile != "" {
-		where += " and mcard_mobile='" + fmt.Sprintf("%s'", s.MCardMobile)
+		where += " and user_mobile='" + fmt.Sprintf("%s'", s.MCardMobile)
 	}
 
-	var qrySql string
-	if s.PageSize == 0 && s.PageNo == 0 {
-		qrySql = fmt.Sprintf("Select  crfuid,contract_id,cert_no,cust_name,mcard_mobile,main_contact_addr,urgent_linkman_name,urgent_linkman_phone  from tbl_ccms_biz_cust_customer where 1=1  %s", where)
-	} else {
-		qrySql = fmt.Sprintf("Select   crfuid,contract_id,cert_no,cust_name,mcard_mobile,main_contact_addr,urgent_linkman_name,urgent_linkman_phone  from tbl_ccms_biz_cust_customer where 1=1 %s Limit %d offset %d", where, s.PageSize, (s.PageNo-1)*s.PageSize)
-	}
+	qrySql := fmt.Sprintf("Select crf_uid,user_id_no,full_name,user_mobile,user_card_no  from act_mv_borrower where 1=1 %s ", where)
+
 	if r.Level == DEBUG {
 		log.Println(SQL_SELECT, qrySql)
 	}
@@ -236,7 +229,7 @@ func (r *CustomerList) GetList(s Search) ([]Customer, error) {
 
 	var p Customer
 	for rows.Next() {
-		rows.Scan(&p.CrfUid, &p.ContractId, &p.CertNo, &p.CustName, &p.MCardMobile, &p.MainContactAddr, &p.UrgentLinkManName, &p.UrgentLinkManPhone)
+		rows.Scan(&p.CrfUid, &p.CertNo, &p.CustName, &p.MCardMobile, &p.BankCardNo)
 		r.Customers = append(r.Customers, p)
 	}
 	log.Println(SQL_ELAPSED, r)
